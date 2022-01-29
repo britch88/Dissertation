@@ -99,11 +99,28 @@ checkdat1 <- filter(dat1, year==1980, county.fips == "003", state.fips== "01" , 
 checkdat4 <- filter(dat4, year == 1980, county.fips == "003", state.fips == "01")
 ```
 
+#Restructure to wide format, 1 record per county per year
+```{r}
+dat5 <- dat4 %>% 
+  pivot_wider(
+              names_from = young_adult,
+              values_from = count
+              ) %>% 
+  data.table::setnames(old = c("1","0"), new = c("n_young_adults","n_other_adults")) %>% 
+  mutate(n_all_adults = sum(n_young_adults,n_other_adults))
 
-#Save file to type rda
+```
+
+#summary statistics for both data sets
+```{r}
+
+```
+
+
+#Save files to type rda
 
 ```{r}
 save(dat4, file = file.path(rdadir, "population_long.RData"))
-
+save(dat5, file = file.path(rdadir, "population_wide.RData"))
 ```
 
