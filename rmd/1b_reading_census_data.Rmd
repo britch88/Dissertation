@@ -71,7 +71,7 @@ head(dat1)
 
 #Drop people under 18 to make the dataset smaller; drop race, origin and sex
 janitor::tabyl(dat1$age,useNA="always")
-dat2 <- filter(dat1, age > 17) %>% select(year, state, state.fips, county.fips, age, population)
+dat2 <- filter(dat1, age > 17) %>% select(year, state, state.fips, county.fips, registry, age, population)
 
 #check the edits
 head(dat2)
@@ -87,28 +87,23 @@ dat3 %>% janitor::tabyl(age, young_adult)
 ```
 
 
+#Creating population counts by county and year for young adults and other adults
+```{r}
+dat4 <- dat3 %>% 
+  group_by(young_adult, year,county.fips,state, state.fips) %>% 
+  summarise(count = sum(as.numeric(population)))
+head(dat4,20)
 
-
-
-
-#Create young adult population, grouped by county and year
-
-
-
-#Create older adult population, group by county and year
-
-
-
-#Create total adult population, group by county and year
-
-
-
-#Do some checks
+#check
+checkdat1 <- filter(dat1, year==1980, county.fips == "003", state.fips== "01" , age > 17, age < 25 )
+checkdat4 <- filter(dat4, year == 1980, county.fips == "003", state.fips == "01")
+```
 
 
 #Save file to type rda
 
 ```{r}
-read_fwf(fwf_sample, fwf_cols(name = 20, state = 10, ssn = 12))
+save(dat4, file = file.path(rdadir, "population_long.RData"))
+
 ```
 
