@@ -128,7 +128,9 @@ dat5$fips_clean <- paste(dat5$state.fips,dat5$county.fips,sep="")
 dat6 <- merge(dat5,fips_xwalk,by="fips_clean", all = TRUE)
 count(filter(dat6,is.na(State)==1 & is.na(state)==0))
 count(filter(dat6,is.na(State)==0 & is.na(state)==1))
-  
+#count(filter(dat6,is.na(State)==0 & is.na(state)==1, !(State %in% c('PR','AS','VI','MP','GU'))))
+
+as.data.frame(filter(dat6,is.na(State)==0 & is.na(state)==1) %>% select(fips_clean,FIPS, Name, State))  
 ```
 
 
@@ -143,16 +145,20 @@ dat6 %>% filter(is.na(State) ==1) %>%  #select(unique())
 ```
 There are `r sum(is.na(dat5$n_young_adults)==1)` county-year observations that did not have any young adults.
 There are `r count(filter(dat6,is.na(State)==1 & is.na(state)==0))` observations that are in the FIPS crosswalk but not in the population data set.
-There are `r count(filter(dat6,is.na(State)==0 & is.na(state)==1))` observations that are in the population data set but not in the FIPS crosswalk.
+There are `r count(filter(dat6,is.na(State)==0 & is.na(state)==1))` observations that are in the population data set but not in the FIPS crosswalk. Most of these were for geographies in Puerto Rico, American Samoa, U.S. Virgin Islands, Northern Mariana Islands, and Guam. There were also
+`r count(filter(dat6,is.na(State)==0 & is.na(state)==1, State = "VA")` records for Virginia and 1 record for Yellowstone National Park in Montana that did not match to any FIPS codes. This is fine.  
+The largest number of young adults is 1,097,486.
 
+#Cleaning final data set
+```{r}
+dat7 <- dat6 %>% select(-state,-FIPS)
+```
 
-
-# The largest number of young adults is 1,097,486
 
 #Save files to type rda
 
 ```{r}
 save(dat4, file = file.path(rdadir, "population_long.RData"))
-save(dat5, file = file.path(rdadir, "population_wide.RData"))
+save(dat7, file = file.path(rdadir, "population_wide.RData"))
 ```
 
