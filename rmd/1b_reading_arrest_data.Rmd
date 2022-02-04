@@ -224,6 +224,109 @@ saveRDS(dat.prop5, file = file.path(rdadir, "int_prop.rds") )
 ```
 
 
+
+# Create variables for drug charges
+```{r drug}
+#Read in drug charge data and create variables
+dat.drug1 <- readRDS(here::here("raw/Main Arrests Data/ucr_arrests_yearly_drug_crimes_age_1974_2019.rds"))
+
+dat.drug2 <- dat.drug1 %>% 
+  select(-contains("female"), 
+         -contains("male"), 
+         -contains("juv"),
+         -contains("_15"),
+         -contains("_13_14"),
+         -contains("_under_10"),
+         -contains("10_12"),
+         -contains("_16"),
+         -contains("_17"))  
+  
+  
+# Create variable capturing young adult total drug charges
+    dat.drug3 <- dat.drug2 %>% 
+      mutate(young_adult_drug_tot = select(dat.drug2, 
+                                        contains("_18"),
+                                  contains("_19"),
+                                  contains("_20"),
+                                  contains("_21"),
+                                  contains("_22"),
+                                  contains("_23"),
+                                  contains("_24")) %>% 
+      rowSums(na.rm = TRUE))
+
+# checking young adult variable
+dat.check1 = filter(dat.drug3, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, young_adult_drug_tot,
+                                        contains("_18"),
+                                  contains("_19"),
+                                  contains("_20"),
+                                  contains("_21"),
+                                  contains("_22"),
+                                  contains("_23"),
+                                  contains("_24"))
+
+
+
+# Create variable capturing other adult total drug charges
+    dat.drug4 <- dat.drug3 %>% 
+      mutate(other_adult_drug_tot = select(dat.drug3, 
+                                      contains("_25"),
+                                  contains("_30"),
+                                  contains("_35"),
+                                  contains("_40"),
+                                  contains("_45"),
+                                  contains("_50"),
+                                  contains("_55"),
+                                  contains("_60"),
+                                  contains("_over_64")) %>% 
+      rowSums(na.rm = TRUE))
+
+# checking other adult variable
+dat.check2 = filter(dat.drug4, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, other_adult_drug_tot,
+                                        contains("_25"),
+                                  contains("_30"),
+                                  contains("_35"),
+                                  contains("_40"),
+                                  contains("_45"),
+                                  contains("_50"),
+                                  contains("_55"),
+                                  contains("_60"),
+                                  contains("_over_64"))
+
+# create measure for all adults and dropped extra columns
+
+dat.drug5 <- dat.drug4 %>% 
+  select(-contains("_18"),
+         -contains("_19"),
+         -contains("_20"),
+         -contains("_21"),
+         -contains("_22"),
+         -contains("_23"),
+         -contains("_24"),
+         -contains("_25"),
+         -contains("_30"),
+         -contains("_35"),
+         -contains("_40"),
+         -contains("_45"),
+         -contains("_50"),
+         -contains("_55"),
+         -contains("_60"),
+         -contains("_over_64"),
+         -contains("_tot_"),
+         -contains("num_")) %>% 
+  mutate(all_adult_drug_tot = young_adult_drug_tot + other_adult_drug_tot)
+  
+saveRDS(dat.drug5, file = file.path(rdadir, "int_drug.rds") )
+```
+
+
+
+
+
+
+
+
 #Merge with county fips crosswalk file
 ```{r}
 #Read in county fips crosswalk file
