@@ -321,7 +321,100 @@ saveRDS(dat.drug5, file = file.path(rdadir, "int_drug.rds") )
 ```
 
 
+# Create variables for all other charges charges
+```{r other}
+#Read in other charge data and create variables
+dat.other1 <- readRDS(here::here("raw/Main Arrests Data/ucr_arrests_yearly_other_crimes_age_1974_2019.rds"))
 
+dat.other2 <- dat.other1 %>% 
+  select(-contains("female"), 
+         -contains("male"), 
+         -contains("juv"),
+         -contains("_15"),
+         -contains("_13_14"),
+         -contains("_under_10"),
+         -contains("10_12"),
+         -contains("_16"),
+         -contains("_17"))  
+  
+  
+# Create variable capturing young adult total other charges
+    dat.other3 <- dat.other2 %>% 
+      mutate(young_adult_other_tot = select(dat.other2, 
+                                        contains("_18"),
+                                  contains("_19"),
+                                  contains("_20"),
+                                  contains("_21"),
+                                  contains("_22"),
+                                  contains("_23"),
+                                  contains("_24")) %>% 
+      rowSums(na.rm = TRUE))
+
+# checking young adult variable
+dat.check1 = filter(dat.other3, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, young_adult_other_tot,
+                                        contains("_18"),
+                                  contains("_19"),
+                                  contains("_20"),
+                                  contains("_21"),
+                                  contains("_22"),
+                                  contains("_23"),
+                                  contains("_24"))
+
+
+
+# Create variable capturing other adult total other charges
+    dat.other4 <- dat.other3 %>% 
+      mutate(other_adult_other_tot = select(dat.other3, 
+                                      contains("_25"),
+                                  contains("_30"),
+                                  contains("_35"),
+                                  contains("_40"),
+                                  contains("_45"),
+                                  contains("_50"),
+                                  contains("_55"),
+                                  contains("_60"),
+                                  contains("_over_64")) %>% 
+      rowSums(na.rm = TRUE))
+
+# checking other adult variable
+dat.check2 = filter(dat.other4, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, other_adult_other_tot,
+                                        contains("_25"),
+                                  contains("_30"),
+                                  contains("_35"),
+                                  contains("_40"),
+                                  contains("_45"),
+                                  contains("_50"),
+                                  contains("_55"),
+                                  contains("_60"),
+                                  contains("_over_64"))
+
+# create measure for all adults and dropped extra columns
+
+dat.other5 <- dat.other4 %>% 
+  select(-contains("_18"),
+         -contains("_19"),
+         -contains("_20"),
+         -contains("_21"),
+         -contains("_22"),
+         -contains("_23"),
+         -contains("_24"),
+         -contains("_25"),
+         -contains("_30"),
+         -contains("_35"),
+         -contains("_40"),
+         -contains("_45"),
+         -contains("_50"),
+         -contains("_55"),
+         -contains("_60"),
+         -contains("_over_64"),
+         -contains("_tot_"),
+         -contains("num_")) %>% 
+  mutate(all_adult_other_tot = young_adult_other_tot + other_adult_other_tot)
+  
+saveRDS(dat.other5, file = file.path(rdadir, "int_other.rds") )
+```
 
 
 
