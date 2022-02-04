@@ -8,7 +8,7 @@ output: html_document
 # Objective
 ```{r directories}
 rawdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/raw"
-rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate"
 
 ```
 
@@ -19,32 +19,11 @@ rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 ```{r packages}
 # # Import packages
 library(Hmisc)
-# library(psych) # functions for statistics
 library(tidyverse) # suite of packages in for manipulating/tidying/visualizing, etc. data
-# library(visdat) # data visualization package
-# library(scales) # for scaling data & making guides for reading data visualizations
-# library(naniar) # for summaries, structures, visualizations of missing data
 library(lubridate) # manipulating dates
-# library(parsedate) # parsing dates
-# library(skimr)  # to generate table of descriptive stats
 library(readxl)  # read in excel files
 library(knitr) # for RMD formatting
-#library(purrr) # for working with lists
-#library(janitor) # to convert var names to snake case
-# #library(summarytools) # to generate metadata & summary statistics - commented out because throws error around connecting to display :0 that I think needs admin privilege to fix
-# library(tidyselect) # helpers for dplyr, including `all_of`
 library(kableExtra) # to output tables as images
-# library(shiny) # to deploy Facetting EDA app
-# library(ggplot2) # to draw plots
-# library(dplyr) # to manage data
-# library(shinycssloaders) # to create progress loader for facetting EDA app
-# library(cobalt) # bal.tab & love.plot 
-# library(corrr) # correlations 
-# library(caret) # findCorrelations function 
-# library(combinat) # get combinations 
-# library(MASS) # AIC, BIC functions
-# library(svglite) # svg images
-# library(ggpubr) # subplotting
 library(fastDummies) # easy creation of dummy variables 
 
 
@@ -52,11 +31,11 @@ library(fastDummies) # easy creation of dummy variables
 ```
 
 
-```{r}
-#Read in charge data and create variables
-dat.prop1 <- readRDS(here::here("raw/Main Arrests Data/ucr_arrests_yearly_index_crimes_age_1974_2019.rds"))
+```{r index}
+#Read in index charge data and create variables
+dat.index1 <- readRDS(here::here("raw/Main Arrests Data/ucr_arrests_yearly_index_crimes_age_1974_2019.rds"))
 
-dat.prop2 <- dat.prop1 %>% 
+dat.index2 <- dat.index1 %>% 
   select(-contains("female"), 
          -contains("male"), 
          -contains("juv"),
@@ -69,8 +48,8 @@ dat.prop2 <- dat.prop1 %>%
   
   
 # Create variable capturing young adult total index charges
-    dat.prop3 <- dat.prop2 %>% 
-      mutate(young_adult_tot = select(dat.prop2, 
+    dat.index3 <- dat.index2 %>% 
+      mutate(young_adult_index_tot = select(dat.index2, 
                                         contains("_18"),
                                   contains("_19"),
                                   contains("_20"),
@@ -80,9 +59,9 @@ dat.prop2 <- dat.prop1 %>%
                                   contains("_24")) %>% 
       rowSums(na.rm = TRUE))
 
-# checking youn adult variable
-dat.check1 = filter(dat.prop3, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
-  select( year, fips_state_county_code, young_adult_tot,
+# checking young adult variable
+dat.check1 = filter(dat.index3, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, young_adult_index_tot,
                                         contains("_18"),
                                   contains("_19"),
                                   contains("_20"),
@@ -94,8 +73,8 @@ dat.check1 = filter(dat.prop3, year==2018, fips_state_county_code == "02020", ag
 
 
 # Create variable capturing other adult total index charges
-    dat.prop4 <- dat.prop3 %>% 
-      mutate(other_adult_tot = select(dat.prop3, 
+    dat.index4 <- dat.index3 %>% 
+      mutate(other_adult_index_tot = select(dat.index3, 
                                       contains("_25"),
                                   contains("_30"),
                                   contains("_35"),
@@ -108,8 +87,8 @@ dat.check1 = filter(dat.prop3, year==2018, fips_state_county_code == "02020", ag
       rowSums(na.rm = TRUE))
 
 # checking other adult variable
-dat.check2 = filter(dat.prop4, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
-  select( year, fips_state_county_code, other_adult_tot,
+dat.check2 = filter(dat.index4, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, other_adult_index_tot,
                                         contains("_25"),
                                   contains("_30"),
                                   contains("_35"),
@@ -122,7 +101,7 @@ dat.check2 = filter(dat.prop4, year==2018, fips_state_county_code == "02020", ag
 
 # create measure for all adults and dropped extra columns
 
-dat.prop5 <- dat.prop4 %>% 
+dat.index5 <- dat.index4 %>% 
   select(-contains("_18"),
          -contains("_19"),
          -contains("_20"),
@@ -141,9 +120,9 @@ dat.prop5 <- dat.prop4 %>%
          -contains("_over_64"),
          -contains("_tot_"),
          -contains("num_")) %>% 
-  mutate(all_adult_tot = young_adult_tot + other_adult_tot)
+  mutate(all_adult_index_tot = young_adult_index_tot + other_adult_index_tot)
   
-
+saveRDS(dat.index5, file = file.path(rdadir, "int_index.rds") )
 
 
 
@@ -242,7 +221,7 @@ dat7 <- dat6 %>% select(-state,-FIPS)
 #Save files to type rda
 
 ```{r}
-save(dat4, file = file.path(rdadir, "population_long.RData"))
-save(dat7, file = file.path(rdadir, "population_wide.RData"))
+save(dat4, file = file.path(rdadir, ""))
+save(dat7, file = file.path(rdadir, ""))
 ```
 

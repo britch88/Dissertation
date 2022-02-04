@@ -1,0 +1,164 @@
+---
+title: "1b_reading_census_data"
+author: "Brit Henderson"
+date: "Last Updated: `r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+# Objective
+```{r directories}
+rawdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/raw"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+```{r functions}
+
+```
+
+```{r packages}
+# # Import packages
+library(Hmisc)
+# library(psych) # functions for statistics
+library(tidyverse) # suite of packages in for manipulating/tidying/visualizing, etc. data
+# library(visdat) # data visualization package
+# library(scales) # for scaling data & making guides for reading data visualizations
+# library(naniar) # for summaries, structures, visualizations of missing data
+library(lubridate) # manipulating dates
+# library(parsedate) # parsing dates
+# library(skimr)  # to generate table of descriptive stats
+library(readxl)  # read in excel files
+library(knitr) # for RMD formatting
+#library(purrr) # for working with lists
+#library(janitor) # to convert var names to snake case
+# #library(summarytools) # to generate metadata & summary statistics - commented out because throws error around connecting to display :0 that I think needs admin privilege to fix
+# library(tidyselect) # helpers for dplyr, including `all_of`
+library(kableExtra) # to output tables as images
+# library(shiny) # to deploy Facetting EDA app
+# library(ggplot2) # to draw plots
+# library(dplyr) # to manage data
+# library(shinycssloaders) # to create progress loader for facetting EDA app
+# library(cobalt) # bal.tab & love.plot 
+# library(corrr) # correlations 
+# library(caret) # findCorrelations function 
+# library(combinat) # get combinations 
+# library(MASS) # AIC, BIC functions
+# library(svglite) # svg images
+# library(ggpubr) # subplotting
+library(fastDummies) # easy creation of dummy variables 
+
+
+
+```
+
+
+```{r}
+#Reading in the population data
+dat1 <- read_fwf(here::here("raw/Census Data/us.1969_2019.singleages.txt"), 
+                 fwf_cols(
+                  year = 4,
+                 state = 2,
+                 state.fips = 2,
+                 county.fips = 3,
+                 registry = 2,
+                 race = 1,
+                 origin = 1,
+                 sex = 1,
+                 age = 2,
+                 population = 8))
+
+#quick look at a few rows
+head(dat1)
+
+#Drop people under 18 to make the dataset smaller; drop race, origin and sex
+janitor::tabyl(dat1$age,useNA="always")
+dat2 <- filter(dat1, age > 17) %>% select(year, state, state.fips, county.fips, registry, age, population)
+
+#check the edits
+head(dat2)
+janitor::tabyl(dat2$age,useNA="always")
+
+#Flag young adult age group
+dat3 <- dat2 %>% 
+  mutate(young_adult = ifelse(age <25,1,0))
+
+dat3 %>% janitor::tabyl(age, young_adult)
+
+
+```
+
+
+#Creating population counts by county and year for young adults and other adults
+```{r}
+dat4 <- dat3 %>% 
+  group_by(young_adult, year,county.fips,state, state.fips) %>% 
+  summarise(count = sum(as.numeric(population)))
+head(dat4,20)
+
+#check
+checkdat1 <- filter(dat1, year==1980, county.fips == "003", state.fips== "01" , age > 17, age < 25 )
+checkdat4 <- filter(dat4, year == 1980, county.fips == "003", state.fips == "01")
+```
+
+#Restructure to wide format, 1 record per county per year
+```{r}
+dat5 <- dat4 %>% 
+  pivot_wider(
+              names_from = young_adult,
+              values_from = count
+              ) %>% 
+  data.table::setnames(old = c("1","0"), new = c("n_young_adults","n_other_adults")) %>% 
+  mutate(n_all_adults = sum(n_young_adults,n_other_adults))
+
+```
+
+#Merge with county fips crosswalk file
+```{r}
+#Read in county fips crosswalk file
+fips_xwalk <- read.csv(here::here("raw/Census Data/FIPS_code_xwalk.csv"), colClasses = c(FIPS = "character"))
+
+# Add leading zeros to Fips codes in xwalk
+fips_xwalk$fips_clean <- str_pad(fips_xwalk$FIPS, 5, pad = "0")
+  #paste0("0",fips_xwalk$FIPS) - this code could be useful if everything in column needs leading zero. otherwise requires conditioning
+  
+
+#In population data set, create composite fips code variable that includes county fips code and state fips code
+dat5$fips_clean <- paste(dat5$state.fips,dat5$county.fips,sep="")
+
+dat6 <- merge(dat5,fips_xwalk,by="fips_clean", all = TRUE)
+count(filter(dat6,is.na(State)==1 & is.na(state)==0))
+count(filter(dat6,is.na(State)==0 & is.na(state)==1))
+#count(filter(dat6,is.na(State)==0 & is.na(state)==1, !(State %in% c('PR','AS','VI','MP','GU'))))
+
+as.data.frame(filter(dat6,is.na(State)==0 & is.na(state)==1) %>% select(fips_clean,FIPS, Name, State))  
+```
+
+
+#summary statistics for both data sets
+```{r}
+summary(dat6)
+describe(dat6)
+#There are 16 county-years observations that did not have any young adults
+# The largest number of young adults is 1,097,486
+
+dat6 %>% filter(is.na(State) ==1) %>%  #select(unique())
+```
+There are `r sum(is.na(dat5$n_young_adults)==1)` county-year observations that did not have any young adults.
+There are `r count(filter(dat6,is.na(State)==1 & is.na(state)==0))` observations that are in the FIPS crosswalk but not in the population data set.
+There are `r count(filter(dat6,is.na(State)==0 & is.na(state)==1))` observations that are in the population data set but not in the FIPS crosswalk. Most of these were for geographies in Puerto Rico, American Samoa, U.S. Virgin Islands, Northern Mariana Islands, and Guam. There were also
+`r count(filter(dat6,is.na(State)==0 & is.na(state)==1, State = "VA")` records for Virginia and 1 record for Yellowstone National Park in Montana that did not match to any FIPS codes. This is fine.  
+The largest number of young adults is 1,097,486.
+
+#Cleaning final data set
+```{r}
+dat7 <- dat6 %>% select(-state,-FIPS)
+```
+
+
+#Save files to type rda
+
+```{r}
+save(dat4, file = file.path(rdadir, "population_long.RData"))
+save(dat7, file = file.path(rdadir, "population_wide.RData"))
+```
+

@@ -1,0 +1,227 @@
+---
+title: "1b_reading_arrest_data"
+author: "Brit Henderson"
+date: "Last Updated: `r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+# Objective
+```{r directories}
+rawdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/raw"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate"
+
+```
+
+```{r functions}
+
+```
+
+```{r packages}
+# # Import packages
+library(Hmisc)
+library(tidyverse) # suite of packages in for manipulating/tidying/visualizing, etc. data
+library(lubridate) # manipulating dates
+library(readxl)  # read in excel files
+library(knitr) # for RMD formatting
+library(kableExtra) # to output tables as images
+library(fastDummies) # easy creation of dummy variables 
+
+
+
+```
+
+
+```{r index}
+#Read in index charge data and create variables
+dat.index1 <- readRDS(here::here("raw/Main Arrests Data/ucr_arrests_yearly_index_crimes_age_1974_2019.rds"))
+
+dat.index2 <- dat.index1 %>% 
+  select(-contains("female"), 
+         -contains("male"), 
+         -contains("juv"),
+         -contains("_15"),
+         -contains("_13_14"),
+         -contains("_under_10"),
+         -contains("10_12"),
+         -contains("_16"),
+         -contains("_17"))  
+  
+  
+# Create variable capturing young adult total index charges
+    dat.index3 <- dat.index2 %>% 
+      mutate(young_adult_index_tot = select(dat.index2, 
+                                        contains("_18"),
+                                  contains("_19"),
+                                  contains("_20"),
+                                  contains("_21"),
+                                  contains("_22"),
+                                  contains("_23"),
+                                  contains("_24")) %>% 
+      rowSums(na.rm = TRUE))
+
+# checking young adult variable
+dat.check1 = filter(dat.index3, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, young_adult_index_tot,
+                                        contains("_18"),
+                                  contains("_19"),
+                                  contains("_20"),
+                                  contains("_21"),
+                                  contains("_22"),
+                                  contains("_23"),
+                                  contains("_24"))
+
+
+
+# Create variable capturing other adult total index charges
+    dat.index4 <- dat.index3 %>% 
+      mutate(other_adult_index_tot = select(dat.index3, 
+                                      contains("_25"),
+                                  contains("_30"),
+                                  contains("_35"),
+                                  contains("_40"),
+                                  contains("_45"),
+                                  contains("_50"),
+                                  contains("_55"),
+                                  contains("_60"),
+                                  contains("_over_64")) %>% 
+      rowSums(na.rm = TRUE))
+
+# checking other adult variable
+dat.check2 = filter(dat.index4, year==2018, fips_state_county_code == "02020", agency_name == "anchorage") %>% 
+  select( year, fips_state_county_code, other_adult_index_tot,
+                                        contains("_25"),
+                                  contains("_30"),
+                                  contains("_35"),
+                                  contains("_40"),
+                                  contains("_45"),
+                                  contains("_50"),
+                                  contains("_55"),
+                                  contains("_60"),
+                                  contains("_over_64"))
+
+# create measure for all adults and dropped extra columns
+
+dat.index5 <- dat.index4 %>% 
+  select(-contains("_18"),
+         -contains("_19"),
+         -contains("_20"),
+         -contains("_21"),
+         -contains("_22"),
+         -contains("_23"),
+         -contains("_24"),
+         -contains("_25"),
+         -contains("_30"),
+         -contains("_35"),
+         -contains("_40"),
+         -contains("_45"),
+         -contains("_50"),
+         -contains("_55"),
+         -contains("_60"),
+         -contains("_over_64"),
+         -contains("_tot_"),
+         -contains("num_")) %>% 
+  mutate(all_adult_index_tot = young_adult_index_tot + other_adult_index_tot)
+  
+saveRDS(dat.index5, file = file.path(rdadir, "int_index.rds") )
+
+
+
+
+
+
+
+#quick look at a few rows
+head(dat1)
+
+#Drop people under 18 to make the dataset smaller; drop race, origin and sex
+janitor::tabyl(dat1$age,useNA="always")
+dat2 <- filter(dat1, age > 17) %>% select(year, state, state.fips, county.fips, registry, age, population)
+
+#check the edits
+head(dat2)
+janitor::tabyl(dat2$age,useNA="always")
+
+#Flag young adult age group
+dat3 <- dat2 %>% 
+  mutate(young_adult = ifelse(age <25,1,0))
+
+dat3 %>% janitor::tabyl(age, young_adult)
+
+
+```
+
+
+#Creating population counts by county and year for young adults and other adults
+```{r}
+dat4 <- dat3 %>% 
+  group_by(young_adult, year,county.fips,state, state.fips) %>% 
+  summarise(count = sum(as.numeric(population)))
+head(dat4,20)
+
+#check
+checkdat1 <- filter(dat1, year==1980, county.fips == "003", state.fips== "01" , age > 17, age < 25 )
+checkdat4 <- filter(dat4, year == 1980, county.fips == "003", state.fips == "01")
+```
+
+#Restructure to wide format, 1 record per county per year
+```{r}
+dat5 <- dat4 %>% 
+  pivot_wider(
+              names_from = young_adult,
+              values_from = count
+              ) %>% 
+  data.table::setnames(old = c("1","0"), new = c("n_young_adults","n_other_adults")) %>% 
+  mutate(n_all_adults = sum(n_young_adults,n_other_adults))
+
+```
+
+#Merge with county fips crosswalk file
+```{r}
+#Read in county fips crosswalk file
+fips_xwalk <- read.csv(here::here("raw/Census Data/FIPS_code_xwalk.csv"), colClasses = c(FIPS = "character"))
+
+# Add leading zeros to Fips codes in xwalk
+fips_xwalk$fips_clean <- str_pad(fips_xwalk$FIPS, 5, pad = "0")
+  #paste0("0",fips_xwalk$FIPS) - this code could be useful if everything in column needs leading zero. otherwise requires conditioning
+  
+
+#In population data set, create composite fips code variable that includes county fips code and state fips code
+dat5$fips_clean <- paste(dat5$state.fips,dat5$county.fips,sep="")
+
+dat6 <- merge(dat5,fips_xwalk,by="fips_clean", all = TRUE)
+count(filter(dat6,is.na(State)==1 & is.na(state)==0))
+count(filter(dat6,is.na(State)==0 & is.na(state)==1))
+#count(filter(dat6,is.na(State)==0 & is.na(state)==1, !(State %in% c('PR','AS','VI','MP','GU'))))
+
+as.data.frame(filter(dat6,is.na(State)==0 & is.na(state)==1) %>% select(fips_clean,FIPS, Name, State))  
+```
+
+
+#summary statistics for both data sets
+```{r}
+summary(dat6)
+describe(dat6)
+#There are 16 county-years observations that did not have any young adults
+# The largest number of young adults is 1,097,486
+
+dat6 %>% filter(is.na(State) ==1) %>%  #select(unique())
+```
+There are `r sum(is.na(dat5$n_young_adults)==1)` county-year observations that did not have any young adults.
+There are `r count(filter(dat6,is.na(State)==1 & is.na(state)==0))` observations that are in the FIPS crosswalk but not in the population data set.
+There are `r count(filter(dat6,is.na(State)==0 & is.na(state)==1))` observations that are in the population data set but not in the FIPS crosswalk. Most of these were for geographies in Puerto Rico, American Samoa, U.S. Virgin Islands, Northern Mariana Islands, and Guam. There were also
+`r count(filter(dat6,is.na(State)==0 & is.na(state)==1, State = "VA")` records for Virginia and 1 record for Yellowstone National Park in Montana that did not match to any FIPS codes. This is fine.  
+The largest number of young adults is 1,097,486.
+
+#Cleaning final data set
+```{r}
+dat7 <- dat6 %>% select(-state,-FIPS)
+```
+
+
+#Save files to type rda
+
+```{r}
+save(dat4, file = file.path(rdadir, ""))
+save(dat7, file = file.path(rdadir, ""))
+```
+
