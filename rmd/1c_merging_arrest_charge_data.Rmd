@@ -60,19 +60,26 @@ all.arrests <- df_list %>% reduce(full_join,
 
 
 #summary statistics for all arrests data set
-```{r}
-summary(dat6)
-describe(dat6)
-#There are 16 county-years observations that did not have any young adults
-# The largest number of young adults is 1,097,486
+```{r stats}
+summary(all.arrests)
+describe(all.arrests)
 
-dat6 %>% filter(is.na(State) ==1) %>%  #select(unique())
 ```
-There are `r sum(is.na(dat5$n_young_adults)==1)` county-year observations that did not have any young adults.
-There are `r count(filter(dat6,is.na(State)==1 & is.na(state)==0))` observations that are in the FIPS crosswalk but not in the population data set.
-There are `r count(filter(dat6,is.na(State)==0 & is.na(state)==1))` observations that are in the population data set but not in the FIPS crosswalk. Most of these were for geographies in Puerto Rico, American Samoa, U.S. Virgin Islands, Northern Mariana Islands, and Guam. There were also
-`r count(filter(dat6,is.na(State)==0 & is.na(state)==1, State = "VA")` records for Virginia and 1 record for Yellowstone National Park in Montana that did not match to any FIPS codes. This is fine.  
-The largest number of young adults is 1,097,486.
+
+```{r checks}
+
+checkdat <- all.arrests %>% 
+  group_by(year, agency_name, fips_place_code, fips_state_county_code) %>% 
+  summarise(n = n())
+
+summary(checkdat2)
+
+hist(checkdat2$n)
+table(checkdat2$n, useNA = "always")
+checkdat2 <- all.arrests %>% count(year, agency_name, fips_place_code, fips_state_county_code)
+```
+
+
 
 #Cleaning final data set
 ```{r}
