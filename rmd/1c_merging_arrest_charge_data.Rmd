@@ -83,14 +83,13 @@ checkdat2 <- all.arrests %>% count(year, agency_name, fips_place_code, fips_stat
 
 #Cleaning final data set
 ```{r}
-dat7 <- dat6 %>% select(-state,-FIPS)
+#dat7 <- dat6 %>% select(-state,-FIPS)
 ```
 
 
 #Save files to type rda
 
 ```{r}
-save(dat4, file = file.path(rdadir, ""))
-save(dat7, file = file.path(rdadir, ""))
+saveRDS(all.arrests, file = file.path(rdadir, "all_arrests.rds"))
 ```
 
