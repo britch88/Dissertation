@@ -1,14 +1,13 @@
 ---
-title: "1c_Combining Arrest Data"
+title: "1d_merging_arrest_and_population_data"
 author: "Brit Henderson"
 date: "Last Updated: `r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
-
 # Objective
-Combine the different charge types into one arrest counts file
+Combine arrest counts data with population counts data
 ```{r directories}
-readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate"
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 
 ```
@@ -34,10 +33,8 @@ library(fastDummies) # easy creation of dummy variables
 
 #Load the data sets
 ```{r data}
-dat.index <- readRDS(here::here("rda/Intermediate/int_index.rds"))
-dat.prop <- readRDS(here::here("rda/Intermediate/int_prop.rds"))
-dat.drug <- readRDS(here::here("rda/Intermediate/int_drug.rds"))
-dat.other <- readRDS(here::here("rda/Intermediate/int_other.rds"))
+arrests <- readRDS(here::here("rda/all_arrests.rds"))
+population <- load(here::here("rda/population_long.RData"))
 
 
 

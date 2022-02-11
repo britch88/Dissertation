@@ -158,7 +158,10 @@ dat7 <- dat6 %>% select(-state,-FIPS)
 #Save files to type rda
 
 ```{r}
-save(dat4, file = file.path(rdadir, "population_long.RData"))
-save(dat7, file = file.path(rdadir, "population_wide.RData"))
+#save(dat4, file = file.path(rdadir, "population_long.RData"))
+#save(dat7, file = file.path(rdadir, "population_wide.RData"))
+saveRDS(dat4, file = file.path(rdadir, "population_long.rds"))
+saveRDS(dat7, file = file.path(rdadir, "population_wide.rds"))
+
 ```
 
