@@ -75,9 +75,6 @@ all.arrests2 <- all.arrests[!duplicated(all.arrests), ]
 summary(all.arrests)
 describe(all.arrests)
 glimpse(all.arrests2)
-```
-
-```{r checks}
 
 checkdat <- all.arrests2 %>% 
   group_by(year, agency_name, fips_place_code, fips_state_county_code) %>% 
@@ -90,12 +87,49 @@ table(checkdat2$n, useNA = "always")
 checkdat2 <- all.arrests2 %>% count(year, agency_name, fips_place_code, fips_state_county_code)
 ```
 
+# Create measure of total cases
+```{r}
+all.arrests3 <- all.arrests2 %>% 
+  mutate(young_adult_tot = young_adult_drug_tot + young_adult_index_tot + young_adult_prop_tot + young_adult_other_tot,
+            other_adult_tot = other_adult_drug_tot + other_adult_prop_tot + other_adult_index_tot + other_adult_other_tot,
+            all_adult_tot = all_adult_drug_tot + all_adult_index_tot + all_adult_prop_tot + all_adult_other_tot)
 
+#looks good
+```
+
+#Aggregate to County level
+```{r}
+county.arrests <- all.arrests3 %>% 
+  group_by(year,state,country_division, fips_state_county_code, state_abb,fips_county_code, fips_state_code) %>% 
+  mutate(min_number_of_months_reported = min(number_of_months_reported),
+            c_young_adult_prop_tot = sum(young_adult_prop_tot),
+            c_young_adult_drug_tot = sum(young_adult_drug_tot),
+            c_young_adult_index_tot = sum(young_adult_index_tot),
+            c_young_adult_other_tot = sum(young_adult_other_tot),
+            c_other_adult_drug_tot = sum(other_adult_drug_tot),
+            c_other_adult_prop_tot = sum(other_adult_prop_tot),
+            c_other_adult_index_tot = sum(other_adult_index_tot),
+            c_other_adult_other_tot = sum(other_adult_index_tot),
+            c_all_adult_drug_tot = sum(all_adult_drug_tot),
+            c_all_adult_prop_tot = sum(all_adult_prop_tot),
+            c_all_adult_index_tot = sum(all_adult_index_tot),
+            c_all_adult_other_tot = sum(all_adult_other_tot),
+            c_young_adult_tot = sum(young_adult_tot),
+            c_other_adult_tot = sum(other_adult_tot),
+            c_all_adult_tot = sum(all_adult_tot))
+```
+
+```{r}
+checkdat3 <- county.arrests %>% filter(year=2018, fips_state_county_code="12086") %>% 
+  select(year, fips_state_county_code, agency_name, state, contains("young") )
+```
 
 
 #Save files to type rda
 
 ```{r}
-saveRDS(all.arrests2, file = file.path(rdadir, "all_arrests.rds"))
+saveRDS(all.arrests2, file = file.path(rdadir, "all_arrests"))
+saveRDS(all.arrests3, file = file.path(rdadir, "arrests_by_agency.rds"))
+saveRDS(county_arrests, file = file.path(rdadir, "arrests_by_county.rds"))
 ```
 

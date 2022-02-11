@@ -34,7 +34,7 @@ library(fastDummies) # easy creation of dummy variables
 #Load the data sets
 ```{r data}
 arrests <- readRDS(here::here("rda/all_arrests.rds"))
-population <- load(here::here("rda/population_long.RData"))
+population <- readRDS(here::here("rda/population_wide.rds"))
 
 
 
