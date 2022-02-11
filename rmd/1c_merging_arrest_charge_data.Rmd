@@ -120,16 +120,21 @@ county.arrests <- all.arrests3 %>%
 ```
 
 ```{r}
-checkdat3 <- county.arrests %>% filter(year=2018, fips_state_county_code="12086") %>% 
+checkdat3 <- county.arrests %>% filter(year==2000, fips_state_county_code=="23017") %>% 
   select(year, fips_state_county_code, agency_name, state, contains("young") )
+#looks good!
 ```
 
+# Keep only one record per county-year with only total arrests
+```{r}
+final_county <-  county.arrests %>% distinct(year, fips_state_county_code, state,c_young_adult_tot,c_other_adult_tot,c_all_adult_tot)
+```
 
 #Save files to type rda
 
 ```{r}
 saveRDS(all.arrests2, file = file.path(rdadir, "all_arrests"))
 saveRDS(all.arrests3, file = file.path(rdadir, "arrests_by_agency.rds"))
-saveRDS(county_arrests, file = file.path(rdadir, "arrests_by_county.rds"))
+saveRDS(final_county, file = file.path(rdadir, "total_arrests_by_county.rds"))
 ```
 
