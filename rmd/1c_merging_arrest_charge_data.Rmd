@@ -55,6 +55,17 @@ all.arrests <- df_list %>% reduce(full_join,
                                   by= c("ori","ori9","year","state","country_division", "fips_place_code","agency_name","fips_state_county_code", "state_abb",
                                         "population_group","population","longitude","latitude","fips_county_code", "fips_state_code","covered_by","number_of_months_reported"))
 
+
+checkdat1 <- select(all.arrests, agency_name, year, state, fips_state_county_code) %>% group_by(agency_name, year, state, fips_state_county_code) %>% 
+  summarise(numrec = n())
+
+table(checkdat1$numrec, useNA = "always")
+
+checkdat2 <- filter(checkdat1, numrec >1)
+
+#Removing exact duplicate observations
+all.arrests2 <- all.arrests[!duplicated(all.arrests), ]
+
 ```
 
 
@@ -63,7 +74,7 @@ all.arrests <- df_list %>% reduce(full_join,
 ```{r stats}
 summary(all.arrests)
 describe(all.arrests)
-
+glimpse(all.arrests2)
 ```
 
 ```{r checks}
