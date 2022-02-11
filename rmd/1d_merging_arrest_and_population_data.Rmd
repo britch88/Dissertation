@@ -33,35 +33,23 @@ library(fastDummies) # easy creation of dummy variables
 
 #Load the data sets
 ```{r data}
-arrests <- readRDS(here::here("rda/all_arrests.rds"))
+arrests <- readRDS(here::here("rda/total_arrests_by_county.rds"))
 population <- readRDS(here::here("rda/population_wide.rds"))
-
-
 
 
 ```
 
 # merge data sets
 ```{r merge}
-
+#renaming columns to match
+arrests <- rename(arrests, fips_clean = fips_state_county_code)
 #put all data frames into list
-df_list <- list(dat.index, dat.prop, dat.drug, dat.other)      
+df_list <- list(arrests, population)      
 
 #merge all data frames together
-all.arrests <- df_list %>% reduce(full_join, 
-                                  by= c("ori","ori9","year","state","country_division", "fips_place_code","agency_name","fips_state_county_code", "state_abb",
-                                        "population_group","population","longitude","latitude","fips_county_code", "fips_state_code","covered_by","number_of_months_reported"))
+combo1 <- df_list %>% reduce(full_join, by= c("year","fips_clean"))
 
 
-checkdat1 <- select(all.arrests, agency_name, year, state, fips_state_county_code) %>% group_by(agency_name, year, state, fips_state_county_code) %>% 
-  summarise(numrec = n())
-
-table(checkdat1$numrec, useNA = "always")
-
-checkdat2 <- filter(checkdat1, numrec >1)
-
-#Removing exact duplicate observations
-all.arrests2 <- all.arrests[!duplicated(all.arrests), ]
 
 ```
 
