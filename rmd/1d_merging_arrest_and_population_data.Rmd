@@ -33,8 +33,8 @@ library(fastDummies) # easy creation of dummy variables
 
 #Load the data sets
 ```{r data}
-arrests <- readRDS(here::here("rda/total_arrests_by_county.rds"))
-population <- readRDS(here::here("rda/population_wide.rds"))
+arrests <- readRDS(here::here("rda/total_arrests_by_county.rds")) #145,380 records
+population <- readRDS(here::here("rda/population_wide.rds")) #158,286 records
 
 
 ```
@@ -118,25 +118,20 @@ describe(combo1)
 glimpse(combo1)
 ```
 
-```{r checks}
 
-checkdat <- all.arrests2 %>% 
-  group_by(year, agency_name, fips_place_code, fips_state_county_code) %>% 
-  summarise(n = n())
-
-summary(checkdat2)
-
-hist(checkdat2$n)
-table(checkdat2$n, useNA = "always")
-checkdat2 <- all.arrests2 %>% count(year, agency_name, fips_place_code, fips_state_county_code)
+#Create outcome variables and save to analysis file
+```{r}
+combo2 <- combo1 %>% 
+  mutate(young_adult_rate = c_young_adult_tot/n_young_adults *1000,
+         other_adult_rate = c_other_adult_tot/n_other_adults *1000,
+         all_adult_rate = c_all_adult_tot/n_all_adults *1000,
+         young_to_other_ratio = young_adult_rate/other_adult_rate)
 ```
 
 
-
-
-#Save files to type rda
+#Save files to type rds
 
 ```{r}
-saveRDS(all.arrests2, file = file.path(rdadir, "all_arrests.rds"))
+saveRDS(combo1, file = file.path(rdadir, "combined_populations_arrests.rds"))
 ```
 
