@@ -1,30 +1,82 @@
 ---
 title: "2a_create_trajectory_analysis_file"
 author: "Brit Henderson"
-date: "2/18/2022"
+date: "Last Updated: `r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Objective
+Create an analysis file for use in the trajectory analysis and possibly other analyses
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
 ```
 
-## R Markdown
+```{r functions}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+```{r packages}
+# # Import packages
+library(Hmisc)
+library(tidyverse) # suite of packages in for manipulating/tidying/visualizing, etc. data
+library(lubridate) # manipulating dates
+library(readxl)  # read in excel files
+library(knitr) # for RMD formatting
+library(kableExtra) # to output tables as images
+library(fastDummies) # easy creation of dummy variables 
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#Load the data sets
+```{r data}
+combo <- readRDS(here::here("rda/combined_populations_arrests.rds")) # 161,448 records
+
+
+```
+
+
+#Create outcome variables and save to analysis file
+```{r}
+traj1 <- combo %>% 
+  mutate(young_adult_rate = c_young_adult_tot/n_young_adults *1000,
+         other_adult_rate = c_other_adult_tot/n_other_adults *1000,
+         all_adult_rate = c_all_adult_tot/n_all_adults *1000,
+         young_to_other_ratio = young_adult_rate/other_adult_rate)
+
+#check new variables
+checkdat3 <- select(traj1, contains("adult"),young_to_other_ratio) %>% head(3) #looks good
+
+```
+
+
+#In the future, we might incorporate another data set that contains additional county-level info
+```{r}
+
+```
+
+#Keep only observations and columns that are needed
+keeping only county-year-level records that include arrest info, dropping those from years that precede arrest data or that did not
+match to arrest data.
+Dropping the 16,068 records from population data that did not match to arrest data.
+
+```{r}
+
+traj2 <- filter(traj1, inarrest==1) %>% 
+  select(-state,-county.fips,-state.fips, -State) #%>% 
+    rename(state = state_abb)
+
+describe(traj2)
+
+```
+
+
+#Save files to type rds
+```{r}
+saveRDS(traj2, file = file.path(rdadir, "trajectory_analysis_file.rds"))
+```
+
