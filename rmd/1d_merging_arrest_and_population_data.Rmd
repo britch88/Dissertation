@@ -43,23 +43,79 @@ population <- readRDS(here::here("rda/population_wide.rds"))
 ```{r merge}
 #renaming columns to match
 arrests <- rename(arrests, fips_clean = fips_state_county_code)
+
+#create some in variables
+arrests$inarrest <- 1
+population$inpop <- 1
+
 #put all data frames into list
 df_list <- list(arrests, population)      
 
 #merge all data frames together
 combo1 <- df_list %>% reduce(full_join, by= c("year","fips_clean"))
 
+#switch NAs to 0s for in-variables
+combo1$inpop[is.na(combo1$inpop)] <- 0
+combo1$inarrest[is.na(combo1$inarrest)] <- 0
 
+
+# Checking merge
+janitor::tabyl(combo1,inarrest, inpop)
+##143,218 records in both data sets
+
+
+
+
+## 16,068 records only in population data
+# Checking records in pop data but not arrest data
+filter(combo1, inpop==1 & inarrest==0) %>% 
+  select(year) %>% 
+  janitor::tabyl(year)
+### as expected, most (15,490) of the records which appear only in population data are precede the start (1974) of the arrest data.
+### but there are 578 records that occur in later years
+#### 238 are for counties in AK (fips state code = 02)
+#### 12 for counties in NY (fips state code = 36)
+##### 92 have VA counties (fips state code = 51)
+##### 112 for CO counties (fips state code = 08)
+##### 8 for NM counties (fips state code = 35)
+##### 46 for HI counties (fips state code = 15)
+##### 20 for MO counites (fips state code = 02)
+##### 20 for AZ counites (fips state code = 04)
+###missing info for 30 of these
+
+
+checkdat1 <- filter(combo1, inpop==1 & inarrest==0 & year > 1973) 
+janitor::tabyl(checkdat1$Name)
+janitor::tabyl(checkdat1$year)
+janitor::tabyl(checkdat1,fips_clean,State, useNA="always")
+janitor::tabyl(checkdat1$State)
+table(checkdat1$fips_clean, useNA="always")
+
+
+# Checking records in arrest data but not pop data
+## 2,162 records only in arrest data
+checkdat2 <- filter(combo1, inpop==0 & inarrest==1) 
+janitor::tabyl(checkdat2$state)
+janitor::tabyl(checkdat2$year)
+janitor::tabyl(checkdat2,fips_clean,State, useNA="always")
+janitor::tabyl(checkdat2$State)
+table(checkdat1$fips_clean, useNA="always")
+
+### 413 (19.1%) in alaska
+### 278 (12.8%) in virginia
+### 161 (7.4%) in colorado
+### 121 (5.6%) in hawaii
+### all other states make up about 1-2% of these non-matching records
 
 ```
 
 
 
-#summary statistics for all arrests data set
+#summary statistics for combined data set
 ```{r stats}
-summary(all.arrests)
-describe(all.arrests)
-glimpse(all.arrests2)
+summary(combo1)
+describe(combo1)
+glimpse(combo1)
 ```
 
 ```{r checks}
