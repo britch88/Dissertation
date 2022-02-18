@@ -1,0 +1,49 @@
+---
+title: "3a_data_description"
+author: "Brit Henderson"
+date: "Last Updated: `r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+# Objective
+Create an analysis file for use in the trajectory analysis and possibly other analyses
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+```{r functions}
+
+```
+
+```{r packages}
+# # Import packages
+library(Hmisc)
+library(tidyverse) # suite of packages in for manipulating/tidying/visualizing, etc. data
+library(lubridate) # manipulating dates
+library(readxl)  # read in excel files
+library(knitr) # for RMD formatting
+library(kableExtra) # to output tables as images
+library(fastDummies) # easy creation of dummy variables 
+
+
+
+```
+
+
+#Load the data sets
+```{r data}
+combo1 <- readRDS(here::here("rda/combined_populations_arrests.rds")) # records
+
+
+```
+
+#Descriptive Statistics
+```{r}
+
+```
+
+#Data Visualizations
+```{r}
+
+```

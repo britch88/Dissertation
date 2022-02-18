@@ -119,15 +119,6 @@ glimpse(combo1)
 ```
 
 
-#Create outcome variables and save to analysis file
-```{r}
-combo2 <- combo1 %>% 
-  mutate(young_adult_rate = c_young_adult_tot/n_young_adults *1000,
-         other_adult_rate = c_other_adult_tot/n_other_adults *1000,
-         all_adult_rate = c_all_adult_tot/n_all_adults *1000,
-         young_to_other_ratio = young_adult_rate/other_adult_rate)
-```
-
 
 #Save files to type rds
 
