@@ -1,0 +1,29 @@
+---
+title: "3b Trajectory Analysis Methods"
+author: "Brit Henderson"
+date: "2/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Methods
+In this section, I examine the trajectories of county-level young adult rates of arrest across the country from 1974 through 2019, and I group these pathways into clusters of counties with similar patterns. For example, one cluster may represent counties that saw an initial increase in arrest rates followed by a steep decline. Another trajectory might include counties that had low and stable rates of arrest during the entire time period. This analysis not only provides information on the extent to which there is county-level variation in arrest trends but also incorporates information on the unique developmental trajectories of criminal legal systems in particular places (Weisburd et al., 2004). 
+
+In this section, I use group-based trajectory modelling (GBTM), also known as Nagin clustering or Latent Class Growth Analysis (LCGA) to answer the following question:
+
+	What is the range of county-level patterns of change in arrest rates among young adults ages 18 to 24 and can this range of patterns be adequately represented by a typology of pathway clusters?
+
+Group-based trajectory models are a specific type of latent class model. Used in a variety of social sciences (e.g. Psychology, Criminology, Sociology, Public Health), latent class models use observed characteristics, including outcomes, to assign observation units values for unobserved random variables (Nguefack, 2020). GBTM is especially well-suited to detecting patterns in large quantities of longitudinal data and producing easily-digestible summaries of the information. It combines elements of sequence analysis and cluster analysis to provide rich descriptive information on the range and typology of pathways for a particular domain. It is a semi-parametric method that relies on maximum likelihood estimation and assumes a discrete population distribution and homogeneity among units in each cluster defined. The model produces posterior group probabilities that show the likelihood that a given observation belongs to each of the clusters identified. The crimCV package for R is a viable option for performing this analysis.
+I begin by specifying the model. GBTM can accommodate a variety of different data types for the response variable, including binary, counts, and scales, with each requiring a different distribution upon which I build the model (Nagin, 1999). To estimate arrest rate levels, which are in count form, I will use a Poisson distribution  (Cameron and Trivedi, 1986), and to estimate young adults’ relative proportion of all arrests, I will use a beta-distribution (Elmer, Jones, and Nagin, 2018). I estimate the following model: 
+    y_it^   = β_0^   + β_1j^  (T_t) +〖 β_2j^ 〗_^  〖〖(T〗_t〗_^2) + β_3j (T_t^3) + ϵ 
+    
+where Yit is the arrest rate in county i at time t and is a cubic function of time T. Thus Yit varies for each county for each time period. I estimate j different latent classes that are defined by the coefficients  β_1j^ ,β_2j  ,and β_3j. Following the advice of Nagin (1999) and Nguefack et. al. (2000), I begin by specifying an initial model j=1, and then iteratively re-estimate the model, increasing j by 1 each round. I can also adjust the polynomial order of the model (e.g. switching to quadratic instead of cubic). To select the “best” model, I use the (most negative value of the) Bayesian Information Criterion (D'Unger, et. al., 1998).
+
+Next, I use the posterior probabilities produced by the selected model to assign each county to one of the clusters identified. These probabilities represent the likelihood that we would observe a given county’s trajectory given its membership in each of the groups. I will assign each county to the group for which it has the highest posterior probability. This will allow me to create profiles of the average county for each group by calculating summary county-level characteristics for each cluster the selected model identifies. Characteristics that seem to have contrasting values across clusters will be good candidates for the predictive modelling described in the next section. 
+I will then repeat the analytic approach above for my supplemental outcome, ratio of young adult arrest rates to all arrest rates. This analysis will shed light on how the relative proportion of young adult arrest rates may have developed differently. This analysis is important since many researchers have noted that spikes in criminal legal involvement (“crime spikes”) tend to be concentrated among younger age groups. It will be interesting to see if this pattern holds true for all trajectory groups and places.
+
+As noted above, many researchers have highlighted the increased variability in the developmental trajectories of individual young adults, and it is reasonable that some of this variability may be reflected in the county-level as well, especially if young adults tend to co-reside in counties with similar peers. I expect that there will be young adult arrest rate trajectories that vary from the national trends in meaningful ways. I also suspect that the observed clusters will not map neatly to patterns observed in the first section. This would suggest that criminal legal dynamics developed differently across space and time and that there may be different sets of underlying factors (e.g. local opportunity structures versus the accumulation of demographic markers of the transition to adulthood) behind these two types of patterning.  This analysis can help policymakers and stakeholders understand the long term trends in their own arrest rates and identify counties that have had similar histories even if these counties are spatially disparate.  
+
