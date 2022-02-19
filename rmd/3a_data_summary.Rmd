@@ -1,22 +1,21 @@
 ---
-title: "3a_data_description"
+title: "Data"
 author: "Brit Henderson"
 date: "Last Updated: `r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---
-# Objective
-Create an analysis file for use in the trajectory analysis and possibly other analyses
-```{r directories}
+
+```{r directories, echo=FALSE, include=FALSE}
 readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 
 ```
 
-```{r functions}
+```{r functions, include=FALSE}
 
 ```
 
-```{r packages}
+```{r packages, include=FALSE}
 # # Import packages
 library(Hmisc)
 library(tidyverse) # suite of packages in for manipulating/tidying/visualizing, etc. data
@@ -32,18 +31,79 @@ library(fastDummies) # easy creation of dummy variables
 
 
 #Load the data sets
-```{r data}
-combo1 <- readRDS(here::here("rda/combined_populations_arrests.rds")) # records
+```{r data, include=FALSE}
+dat1 <- readRDS(here::here("rda/.rds")) 
 
 
 ```
 
 #Descriptive Statistics
+Sources and variables
+Data for this analysis data from two main sources: the Uniform Crime Reporting (UCR) Program and the U.S. Census Bureau. To create arrest rates among young adults and older adults, I use the Federal Bureau of Investigation’s Uniform Crime Reporting Program Data. I will be using the data on aggregated Arrests by Age, Race and Sex (often referred to as ASR) accessed through the Inter-university Consortium for Political and Social Research’s (ICPSR) openICPSR online self-publishing data repository. Specifically, I use the data sets created by Jacob Kaplan. These data, which are reported by law enforcement agencies (e.g. city, county, state, and tribal law police departments and sheriff’s offices) include annual agency-level information on the number of arrests reported for various types of crimes from 1974 through 2019. This time period allows me to examine arrest rates both before and after the growth in literature around emerging adulthood and developments in neuroscience. It also includes economic recessionary periods which will likely have varying effects on arrest rates across counties (Bushway, Cook, and Phillips, 2013; Lauritsen and Heimer, 2010; Rosenfeld, 2009). 
+
+It is important to note that the data does not include detailed age by race information but only broad age-groups (juvenile vs adult) by race (e.g. white juveniles, Asian adults). The Uniform Crime Report data do not track individuals over time; a person who is arrested multiple times by the same agency in the same year will be counted multiple times. Furthermore, information on arrest charges captures the most serious offense for the arrest event. So if an individual is charged with robbery and loitering at the same arrest, the robbery charge will be recorded as the arrest charge type because it represents the most serious offense. The data also include county and state FIPS codes which will be used to link to county-level Census data, agency name and id number which together uniquely identify each reporting agency in the U.S., and the number of months each agency reported data which will be used to assess the extent of missing data. 
+
+The UCR data are not without limitations which have been documented by Jacob Kaplan (2021) in his user manual and by Maltz and Targonski (2002) and Maltz and Weiss (2006). One of the main issues is the voluntary nature of data reporting. This means that some agencies may not be included in this data, resulting in undercounting when aggregating agency-level data up to the county level. Furthermore, there may be underreporting in general, though the FBI performs a number of checks to assess data validity. To address this limitation, I will flag counties that are likely missing data for a given year and include sensitivity tests with imputed values for these missing observations and also with these counties excluded (see appendix Table 1 for a list of proposed sensitivity tests). Also to my advantage, the group-based trajectory modelling is able to accommodate missing data. Because I will be aggregating agencies up to the county level, I will not be able to account for agencies that may span multiple counties. Therefore, I will also include  sensitivity analyses that exclude agencies that are not within a specified distance to another agency and that are close to a county boundary. Importantly, because the ultimate goal of these analyses (i.e. assessing long term patterns in young adult arrest rates as opposed to estimating arrest rate levels or causal effects), the results and conclusions should not be substantially impacted by imprecision at the county-level. In terms of the county-level time-varying predictors and covariates, all variables may not be available for all years, though I should be able to capture enough time points to provide information on how shifts in these factors affect arrest rates.
+
+The raw data are observed at the agency-level. 
+
+
+#Graph of number of agencies reporting over time
+
+
 ```{r}
 
 ```
 
-#Data Visualizations
+
+#Graph of number of counties included over time
+
+
+```{r}
+
+```
+
+
+U.S. Census Bureau Data
+
+I will use county-level Census Bureau data to create independent variables representing county-level demographic markers of the transition to adulthood and opportunity structures. I will draw from several Census Bureau data products (e.g. Decennial Census, American Community Survey) and data tables. I will also use Census Bureau TIGER shapefiles for mapping purposes. The data files include information necessary for linkage to county-level arrest data. 
+
+#Graph of number of counties included over time
+
+
+```{r}
+
+```
+
+#minimum and maximum number of counties
+
+
+```{r}
+
+```
+
+Dependent variable: The key outcome variable is aggregate county-level rates of arrests per 100,000 residents in the population ages 18 to 24. For each county-year, I create this variable by summing the number of young adult arrests across all agencies within a given county for a given year and then divide this number by the number of young adults in the general population of the county for that year and multiply the resulting value by 100,000. Because it is also helpful to understand the young adult arrest rate in comparison to overall arrest rates, I include a supplemental dependent variable that captures the ratio of the young adult arrest rate to the overall arrest rate.  For this second measure, I divide the young adult arrest rate by the total arrest rate for all residents of a county to understand how rates of arrests among young adults shift in relation to overall rates of arrest. This captures whether any observed trends are specific to young adults or are a reflection of dynamics among all groups.  While all of the analyses focus on the first primary measure - young adult arrest rates - I include supplemental versions that repeat each analysis for the second “ratio” variable.
+
+#Graph of young adult arrest rates over time (county-level mean)
+
+
+```{r}
+
+```
+
+
+#Graph of young adult arrest rates over time (all counties, mean highlighted, 25th and 75th percentiles)
+
+
+```{r}
+
+```
+
+
+#Graph of disparity (mean)
+
+
+
 ```{r}
 
 ```
