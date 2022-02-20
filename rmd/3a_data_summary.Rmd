@@ -70,7 +70,37 @@ ggplot(data = dat2 , mapping = aes(y=n, x=as.factor(year))) +
 
 
 #Graph of number of counties included over time
+```{r, echo=FALSE}
+ccount1 <- readRDS(here::here("rda/total_arrests_by_county.rds")) 
+ccount2 <- ccount1 %>% 
+  group_by(year) %>% 
+  summarise( n = n())
 
+ccount3 <- ccount1 %>%
+  filter(c_all_adult_tot >0) %>% 
+  group_by(year) %>% 
+  summarise( n = n())
+
+
+ggplot(data = ccount2 , mapping = aes(y=n, x=as.factor(year))) +  
+  geom_point(color="blue", 
+             size = 2) +
+  geom_segment(aes(x = as.factor(year), 
+               xend = as.factor(year), 
+               y = 3000,
+               yend =n), color="lightgrey") +
+               #y = reorder(country, lifeExp), 
+              # yend = reorder(country, lifeExp)),
+              
+  labs (x = "Year",
+        y = "",
+        title = "Number of Counties Reporting by Year",
+        subtitle = "UCR Arrests by Age Data") +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+```
 
 ```{r}
 
@@ -78,9 +108,7 @@ ggplot(data = dat2 , mapping = aes(y=n, x=as.factor(year))) +
 
 #Graph number of agencies per county average, min, max, over time
 
-#Graph (or map) of counties not included in data
 
-#List of counties that are missing from recent years (2017-2019, noticeable drop)
 U.S. Census Bureau Data
 
 I will use county-level Census Bureau data to create independent variables representing county-level demographic markers of the transition to adulthood and opportunity structures. I will draw from several Census Bureau data products (e.g. Decennial Census, American Community Survey) and data tables. I will also use Census Bureau TIGER shapefiles for mapping purposes. The data files include information necessary for linkage to county-level arrest data. 
@@ -100,6 +128,111 @@ I will use county-level Census Bureau data to create independent variables repre
 ```
 
 Dependent variable: The key outcome variable is aggregate county-level rates of arrests per 100,000 residents in the population ages 18 to 24. For each county-year, I create this variable by summing the number of young adult arrests across all agencies within a given county for a given year and then divide this number by the number of young adults in the general population of the county for that year and multiply the resulting value by 100,000. Because it is also helpful to understand the young adult arrest rate in comparison to overall arrest rates, I include a supplemental dependent variable that captures the ratio of the young adult arrest rate to the overall arrest rate.  For this second measure, I divide the young adult arrest rate by the total arrest rate for all residents of a county to understand how rates of arrests among young adults shift in relation to overall rates of arrest. This captures whether any observed trends are specific to young adults or are a reflection of dynamics among all groups.  While all of the analyses focus on the first primary measure - young adult arrest rates - I include supplemental versions that repeat each analysis for the second “ratio” variable.
+
+
+```{r merge}
+combo1 <- readRDS(here::here("rda/combined_populations_arrests.rds")) 
+
+
+# Checking merge
+janitor::tabyl(combo1,inarrest, inpop)
+##143,218 records in both data sets
+
+
+
+
+## 16,068 records only in population data
+# Checking records in pop data but not arrest data
+filter(combo1, inpop==1 & inarrest==0) %>% 
+  select(year) %>% 
+  janitor::tabyl(year)
+### as expected, most (15,490) of the records which appear only in population data are precede the start (1974) of the arrest data.
+### but there are 578 records that occur in later years
+#### 238 are for counties in AK (fips state code = 02)
+#### 12 for counties in NY (fips state code = 36)
+##### 92 have VA counties (fips state code = 51)
+##### 112 for CO counties (fips state code = 08)
+##### 8 for NM counties (fips state code = 35)
+##### 46 for HI counties (fips state code = 15)
+##### 20 for MO counites (fips state code = 02)
+##### 20 for AZ counites (fips state code = 04)
+###missing info for 30 of these
+
+
+checkdat1 <- filter(combo1, inpop==1 & inarrest==0 & year > 1973) 
+janitor::tabyl(checkdat1$Name)
+janitor::tabyl(checkdat1$year)
+janitor::tabyl(checkdat1,fips_clean,State, useNA="always")
+janitor::tabyl(checkdat1$State)
+table(checkdat1$fips_clean, useNA="always")
+
+
+# Checking records in arrest data but not pop data
+## 2,162 records only in arrest data
+checkdat2 <- filter(combo1, inpop==0 & inarrest==1) 
+janitor::tabyl(checkdat2$state)
+janitor::tabyl(checkdat2$year)
+janitor::tabyl(checkdat2,fips_clean,State, useNA="always")
+janitor::tabyl(checkdat2$State)
+table(checkdat1$fips_clean, useNA="always")
+
+### 413 (19.1%) in alaska
+### 278 (12.8%) in virginia
+### 161 (7.4%) in colorado
+### 121 (5.6%) in hawaii
+### all other states make up about 1-2% of these non-matching records
+
+summary(combo1)
+describe(combo1)
+glimpse(combo1)
+```
+
+143,218 records in both data sets
+
+#Graph (or map) of counties never included in arrest data
+
+```{r}
+dat3 <- readRDS(here::here("rda/trajectory_pre_analysis_file.rds")) 
+dat4 <- dat3 %>% filter(year >=1974 & inpop != inarrest)
+dat5 <- dat3 %>% 
+  filter(year >= 1974) %>% 
+  mutate(missing = inpop - inarrest,
+         extra = inarrest - inpop) %>% 
+  group_by(year) %>% 
+  summarise( Reporting = sum(inarrest),
+             Non_reporting = sum(inpop),
+             Missing = sum(missing),
+             Extra = sum(extra))
+
+```
+
+
+16,068 records only in population data
+as expected, most (15,490) of the records which appear only in population data are precede the start (1974) of the arrest data.
+but there are 578 records that occur in later years
+238 are for counties in AK (fips state code = 02)
+12 for counties in NY (fips state code = 36)
+92 have VA counties (fips state code = 51)
+112 for CO counties (fips state code = 08)
+8 for NM counties (fips state code = 35)
+46 for HI counties (fips state code = 15)
+20 for MO counites (fips state code = 02)
+20 for AZ counites (fips state code = 04)
+missing info for 30 of these
+
+2,162 records only in arrest data
+413 (19.1%) in alaska
+278 (12.8%) in virginia
+161 (7.4%) in colorado
+121 (5.6%) in hawaii
+all other states make up about 1-2% of these non-matching records
+
+#List of counties that are missing from recent years (2017-2019, noticeable drop)
+
+
+
+
+
 
 #Graph of young adult arrest rates over time (county-level mean)
 
