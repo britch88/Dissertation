@@ -67,8 +67,7 @@ Dropping the 16,068 records from population data that did not match to arrest da
 ```{r}
 
 traj2 <- filter(traj1, inarrest==1) %>% 
-  select(-state,-county.fips,-state.fips, -State) #%>% 
-    rename(state = state_abb)
+  select(-state,-county.fips,-state.fips, -State) 
 
 describe(traj2)
 
@@ -77,6 +76,7 @@ describe(traj2)
 
 #Save files to type rds
 ```{r}
+saveRDS(traj1, file = file.path(rdadir, "trajectory_pre_analysis_file.rds"))
 saveRDS(traj2, file = file.path(rdadir, "trajectory_analysis_file.rds"))
 ```
 

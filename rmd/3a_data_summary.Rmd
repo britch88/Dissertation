@@ -76,7 +76,11 @@ ggplot(data = dat2 , mapping = aes(y=n, x=as.factor(year))) +
 
 ```
 
+#Graph number of agencies per county average, min, max, over time
 
+#Graph (or map) of counties not included in data
+
+#List of counties that are missing from recent years (2017-2019, noticeable drop)
 U.S. Census Bureau Data
 
 I will use county-level Census Bureau data to create independent variables representing county-level demographic markers of the transition to adulthood and opportunity structures. I will draw from several Census Bureau data products (e.g. Decennial Census, American Community Survey) and data tables. I will also use Census Bureau TIGER shapefiles for mapping purposes. The data files include information necessary for linkage to county-level arrest data. 
