@@ -30,13 +30,6 @@ library(fastDummies) # easy creation of dummy variables
 ```
 
 
-#Load the data sets
-```{r data, include=FALSE}
-dat1 <- readRDS(here::here("rda/.rds")) 
-
-
-```
-
 #Descriptive Statistics
 Sources and variables
 Data for this analysis data from two main sources: the Uniform Crime Reporting (UCR) Program and the U.S. Census Bureau. To create arrest rates among young adults and older adults, I use the Federal Bureau of Investigation’s Uniform Crime Reporting Program Data. I will be using the data on aggregated Arrests by Age, Race and Sex (often referred to as ASR) accessed through the Inter-university Consortium for Political and Social Research’s (ICPSR) openICPSR online self-publishing data repository. Specifically, I use the data sets created by Jacob Kaplan. These data, which are reported by law enforcement agencies (e.g. city, county, state, and tribal law police departments and sheriff’s offices) include annual agency-level information on the number of arrests reported for various types of crimes from 1974 through 2019. This time period allows me to examine arrest rates both before and after the growth in literature around emerging adulthood and developments in neuroscience. It also includes economic recessionary periods which will likely have varying effects on arrest rates across counties (Bushway, Cook, and Phillips, 2013; Lauritsen and Heimer, 2010; Rosenfeld, 2009). 
@@ -47,11 +40,31 @@ The UCR data are not without limitations which have been documented by Jacob Kap
 
 The raw data are observed at the agency-level. 
 
-
 #Graph of number of agencies reporting over time
 
+```{r, echo=FALSE}
+dat1 <- readRDS(here::here("rda/arrests_by_agency.rds")) 
+dat2 <- dat1 %>% 
+  group_by(year) %>% summarise(n = n())
 
-```{r}
+
+ggplot(data = dat2 , mapping = aes(y=n, x=as.factor(year))) +  
+  geom_point(color="blue", 
+             size = 2) +
+  geom_segment(aes(x = as.factor(year), 
+               xend = as.factor(year), 
+               y = 0,
+               yend =n), color="lightgrey") +
+               #y = reorder(country, lifeExp), 
+              # yend = reorder(country, lifeExp)),
+              
+  labs (x = "Year",
+        y = "",
+        title = "Number of Agencies Reporting by Year",
+        subtitle = "UCR Arrests by Age Data") +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
 
 ```
 
