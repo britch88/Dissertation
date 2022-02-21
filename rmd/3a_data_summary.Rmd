@@ -134,7 +134,7 @@ ggplot(data=acount) +
 
 ```
 
-#Graph number of agencies reporting every year
+#Graph number of agencies that report for all 46 years
 ```{r}
 
 ayears <- dat1 %>% 
@@ -145,39 +145,12 @@ ayears <- dat1 %>%
 n_distinct(ayears$ori9)
 
 extrayears <- as.list(filter(ayears, years_included > 46) %>% select(ori9))
+# confirming that this problem has been corrected
 
+janitor::tabyl(ayears,years_included)
 
-checkdat1 <- dat1[dat1$ori9 %in% extrayears[[1]] ,]
-n_distinct(checkdat1$ori9)
-#11 agencies have multiple records for the same year, need to delete 27 records
-
-
-checkdat2 <- filter
-  
-  filter(dat1,ori9 %in% extrayears)
-
-
-acount <- dat1 %>% 
-  filter(year >= 1974 & fips_state_county_code != "0") %>% 
-  group_by(fips_state_county_code,year) %>% 
-  summarise(number.agencies = n())
-
-#%>% 
-#  group_by(year) %>% 
-#  summarise(average = mean(number.agencies),
-#            lower = quantile(number.agencies,probs = c(.25)),
-#            upper = quantile(number.agencies,probs = c(.75)))
-
-
-ggplot(data=acount) +
- geom_boxplot(aes(x = as.factor(year), y = number.agencies),outlier.alpha = .01) +  #, outlier.shape = NA)
-  scale_y_continuous(limits   = c(0,10), breaks = seq(0,10,1)) #+
-    #geom_errorbar(aes(ymin = number.agencies - se, ymax = number.agencies + se), width = .1)
-
-ggplot(data=acount) +
-  geom_histogram(aes(x=number.agencies), binwidth = 1) +
-  scale_x_continuous(limits = c(0,50))#+
-  
+ggplot() +
+  geom_histogram(data = ayears, aes(x=years_included), bins = 46)
 
 ```
 There are `r n_distinct(ayears$ori9` distinct agencies included in the data. However, some agencies close over time while new agencies may open.
@@ -330,6 +303,27 @@ all other states make up about 1-2% of these non-matching records
 
 
 ```{r}
+checkrates <- readRDS(here::here("rda/trajectory_analysis_file.rds")) 
+checkrates2 <- checkrates %>% 
+  group_by(year) %>% 
+  summarise(mean = mean(young_adult_rate, na.rm = TRUE),
+             upper = mean + (sd(young_adult_rate, na.rm = TRUE)), #/sqrt(length(young_adult_rate),na.rm = TRUE)),
+              lower = mean - (sd(young_adult_rate, na.rm = TRUE))) #/sqrt(length(young_adult_rate),na.rm = TRUE)))
+
+checkrates3 <-filter(checkrates, year==2013)
+checkrates4 <- filter(checkrates, young_adult_rate >  )
+
+ggplot() +
+  geom_histogram(data=checkrates, aes(x=young_adult_rate)) + scale_x_continuous(limits = c(0,1000))
+
+ggplot(data=checkrates) +
+  geom_errorbar(data=checkrates2, mapping=aes(x=year, ymin=lower, ymax=upper), width=0.2, size=1, color="blue") +
+  geom_point(data=checkrates2, mapping=aes(x=year, y=mean), size=4,shape=21, fill="white") +
+  labs (x = "Year",
+        y = "",
+        title = "Average Young Adult Arrest Rate by Year",
+        subtitle = "Arrest per 1,000 Young Adults Ages 18 to 24") 
+
 
 ```
 
