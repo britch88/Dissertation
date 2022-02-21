@@ -66,30 +66,50 @@ checkdat2 <- filter(checkdat1, numrec >1)
 #Removing exact duplicate observations
 all.arrests2 <- all.arrests[!duplicated(all.arrests), ]
 
+
+#Removing partial duplicates for agencies that contain multiple records for same year. In these 27 instances, one record has a population of 0
+checkdat1 <- all.arrests2 %>% 
+  filter( ori9 !="0") %>% 
+  group_by(ori9) %>% 
+  summarise(years_included = n())
+
+n_distinct(ayears$ori9)
+
+extrayears <- as.list(filter(ayears, years_included > 46) %>% select(ori9))
+
+
+checkdat2 <- all.arrests2[all.arrests2$ori9 %in% extrayears[[1]] ,]
+n_distinct(checkdat2$ori9)
+#11 agencies have multiple records for the same year, need to delete 27 records
+checkdat3 <- filter(checkdat2, population==0)
+
+all.arrests3 <- filter(all.arrests2, !(ori9 %in% extrayears[[1]]) | (ori9 %in% extrayears[[1]] & population != 0))
+
+
 ```
 
 
 
 #summary statistics for all arrests data set
 ```{r stats}
-summary(all.arrests)
-describe(all.arrests)
-glimpse(all.arrests2)
+summary(all.arrests3)
+describe(all.arrests3)
+glimpse(all.arrests3)
 
-checkdat <- all.arrests2 %>% 
+checkdat4 <- all.arrests3 %>% 
   group_by(year, agency_name, fips_place_code, fips_state_county_code) %>% 
   summarise(n = n())
 
-summary(checkdat2)
+summary(checkdat4)
 
-hist(checkdat2$n)
-table(checkdat2$n, useNA = "always")
-checkdat2 <- all.arrests2 %>% count(year, agency_name, fips_place_code, fips_state_county_code)
+hist(checkdat4$n)
+table(checkdat4$n, useNA = "always")
+checkdat4 <- all.arrests3 %>% count(year, agency_name, fips_place_code, fips_state_county_code)
 ```
 
 # Create measure of total cases
 ```{r}
-all.arrests3 <- all.arrests2 %>% 
+all.arrests4 <- all.arrests3 %>% 
   mutate(young_adult_tot = young_adult_drug_tot + young_adult_index_tot + young_adult_prop_tot + young_adult_other_tot,
             other_adult_tot = other_adult_drug_tot + other_adult_prop_tot + other_adult_index_tot + other_adult_other_tot,
             all_adult_tot = all_adult_drug_tot + all_adult_index_tot + all_adult_prop_tot + all_adult_other_tot)
@@ -99,7 +119,7 @@ all.arrests3 <- all.arrests2 %>%
 
 #Aggregate to County level
 ```{r}
-county.arrests <- all.arrests3 %>% 
+county.arrests <- all.arrests4 %>% 
   group_by(year,state,country_division, fips_state_county_code, state_abb,fips_county_code, fips_state_code) %>% 
   mutate(min_number_of_months_reported = min(number_of_months_reported),
             c_young_adult_prop_tot = sum(young_adult_prop_tot),
@@ -120,7 +140,7 @@ county.arrests <- all.arrests3 %>%
 ```
 
 ```{r}
-checkdat3 <- county.arrests %>% filter(year==2000, fips_state_county_code=="23017") %>% 
+checkdat5 <- county.arrests %>% filter(year==2000, fips_state_county_code=="23017") %>% 
   select(year, fips_state_county_code, agency_name, state, contains("young") )
 #looks good!
 ```
@@ -134,7 +154,7 @@ final_county <-  county.arrests %>% distinct(year, fips_state_county_code, state
 
 ```{r}
 saveRDS(all.arrests2, file = file.path(rdadir, "all_arrests"))
-saveRDS(all.arrests3, file = file.path(rdadir, "arrests_by_agency.rds"))
+saveRDS(all.arrests4, file = file.path(rdadir, "arrests_by_agency.rds"))
 saveRDS(final_county, file = file.path(rdadir, "total_arrests_by_county.rds"))
 ```
 

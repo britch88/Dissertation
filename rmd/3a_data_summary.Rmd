@@ -41,7 +41,6 @@ The UCR data are not without limitations which have been documented by Jacob Kap
 The raw data are observed at the agency-level. 
 
 #Graph of number of agencies reporting over time
-
 ```{r, echo=FALSE}
 dat1 <- readRDS(here::here("rda/arrests_by_agency.rds")) 
 dat2 <- dat1 %>% 
@@ -114,8 +113,7 @@ ggplot(data = ccount2 , mapping = aes(y=n, x=as.factor(year))) +
 acount <- dat1 %>% 
   filter(year >= 1974 & fips_state_county_code != "0") %>% 
   group_by(fips_state_county_code,year) %>% 
-  summarise(number.agencies = n(),
-            se = se) 
+  summarise(number.agencies = n())
 
 #%>% 
 #  group_by(year) %>% 
@@ -130,12 +128,60 @@ ggplot(data=acount) +
     #geom_errorbar(aes(ymin = number.agencies - se, ymax = number.agencies + se), width = .1)
 
 ggplot(data=acount) +
-  geom_histogram(aes(x=number.agencies)) +
+  geom_histogram(aes(x=number.agencies), binwidth = 1) +
+  scale_x_continuous(limits = c(0,50))#+
   
 
 ```
 
 #Graph number of agencies reporting every year
+```{r}
+
+ayears <- dat1 %>% 
+  filter( ori9 !="0") %>% 
+  group_by(ori9) %>% 
+  summarise(years_included = n())
+
+n_distinct(ayears$ori9)
+
+extrayears <- as.list(filter(ayears, years_included > 46) %>% select(ori9))
+
+
+checkdat1 <- dat1[dat1$ori9 %in% extrayears[[1]] ,]
+n_distinct(checkdat1$ori9)
+#11 agencies have multiple records for the same year, need to delete 27 records
+
+
+checkdat2 <- filter
+  
+  filter(dat1,ori9 %in% extrayears)
+
+
+acount <- dat1 %>% 
+  filter(year >= 1974 & fips_state_county_code != "0") %>% 
+  group_by(fips_state_county_code,year) %>% 
+  summarise(number.agencies = n())
+
+#%>% 
+#  group_by(year) %>% 
+#  summarise(average = mean(number.agencies),
+#            lower = quantile(number.agencies,probs = c(.25)),
+#            upper = quantile(number.agencies,probs = c(.75)))
+
+
+ggplot(data=acount) +
+ geom_boxplot(aes(x = as.factor(year), y = number.agencies),outlier.alpha = .01) +  #, outlier.shape = NA)
+  scale_y_continuous(limits   = c(0,10), breaks = seq(0,10,1)) #+
+    #geom_errorbar(aes(ymin = number.agencies - se, ymax = number.agencies + se), width = .1)
+
+ggplot(data=acount) +
+  geom_histogram(aes(x=number.agencies), binwidth = 1) +
+  scale_x_continuous(limits = c(0,50))#+
+  
+
+```
+There are `r n_distinct(ayears$ori9` distinct agencies included in the data. However, some agencies close over time while new agencies may open.
+
 
 U.S. Census Bureau Data
 
