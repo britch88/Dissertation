@@ -69,7 +69,7 @@ ggplot(data = dat2 , mapping = aes(y=n, x=as.factor(year))) +
 ```
 
 
-#Graph of number of counties included over time
+#Graph of number of counties included over time, red = number of counties with non-zero values
 ```{r, echo=FALSE}
 ccount1 <- readRDS(here::here("rda/total_arrests_by_county.rds")) 
 ccount2 <- ccount1 %>% 
@@ -87,11 +87,17 @@ ggplot(data = ccount2 , mapping = aes(y=n, x=as.factor(year))) +
              size = 2) +
   geom_segment(aes(x = as.factor(year), 
                xend = as.factor(year), 
-               y = 3000,
+               y = 2400,
                yend =n), color="lightgrey") +
                #y = reorder(country, lifeExp), 
               # yend = reorder(country, lifeExp)),
-              
+  geom_point(data=ccount3, aes(x = as.factor(year)),
+             color="red", 
+             size = 2) +
+  geom_segment(data=ccount3, aes(x = as.factor(year), 
+               xend = as.factor(year), 
+               y = 2400,
+               yend =n), color="lightgrey") +
   labs (x = "Year",
         y = "",
         title = "Number of Counties Reporting by Year",
@@ -102,12 +108,34 @@ ggplot(data = ccount2 , mapping = aes(y=n, x=as.factor(year))) +
 
 ```
 
+
+#Graph number of agencies per county average, min, max, over time
 ```{r}
+acount <- dat1 %>% 
+  filter(year >= 1974 & fips_state_county_code != "0") %>% 
+  group_by(fips_state_county_code,year) %>% 
+  summarise(number.agencies = n(),
+            se = se) 
+
+#%>% 
+#  group_by(year) %>% 
+#  summarise(average = mean(number.agencies),
+#            lower = quantile(number.agencies,probs = c(.25)),
+#            upper = quantile(number.agencies,probs = c(.75)))
+
+
+ggplot(data=acount) +
+ geom_boxplot(aes(x = as.factor(year), y = number.agencies),outlier.alpha = .01) +  #, outlier.shape = NA)
+  scale_y_continuous(limits   = c(0,10), breaks = seq(0,10,1)) #+
+    #geom_errorbar(aes(ymin = number.agencies - se, ymax = number.agencies + se), width = .1)
+
+ggplot(data=acount) +
+  geom_histogram(aes(x=number.agencies)) +
+  
 
 ```
 
-#Graph number of agencies per county average, min, max, over time
-
+#Graph number of agencies reporting every year
 
 U.S. Census Bureau Data
 
@@ -117,15 +145,33 @@ I will use county-level Census Bureau data to create independent variables repre
 
 
 ```{r}
+pop1 <- readRDS(here::here("rda/population_wide.rds")) 
+pop2 <- pop1 %>% 
+  filter(is.na(year)==0) %>% 
+  group_by(year) %>% summarise(n = n())
 
+
+ggplot(data = pop2 , mapping = aes(y=n, x=as.factor(year))) +  
+  geom_point(color="blue", 
+             size = 2) +
+  geom_segment(aes(x = as.factor(year), 
+               xend = as.factor(year), 
+               y = 3000,
+               yend =n), color="lightgrey") +
+               #y = reorder(country, lifeExp), 
+              # yend = reorder(country, lifeExp)),
+              
+  labs (x = "Year",
+        y = "",
+        title = "Number of Counties in U.S. by Year",
+        subtitle = "Census Population Estimates by Age Data") +
+  theme_minimal() + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+  
+  
 ```
 
-#minimum and maximum number of counties
-
-
-```{r}
-
-```
 
 Dependent variable: The key outcome variable is aggregate county-level rates of arrests per 100,000 residents in the population ages 18 to 24. For each county-year, I create this variable by summing the number of young adult arrests across all agencies within a given county for a given year and then divide this number by the number of young adults in the general population of the county for that year and multiply the resulting value by 100,000. Because it is also helpful to understand the young adult arrest rate in comparison to overall arrest rates, I include a supplemental dependent variable that captures the ratio of the young adult arrest rate to the overall arrest rate.  For this second measure, I divide the young adult arrest rate by the total arrest rate for all residents of a county to understand how rates of arrests among young adults shift in relation to overall rates of arrest. This captures whether any observed trends are specific to young adults or are a reflection of dynamics among all groups.  While all of the analyses focus on the first primary measure - young adult arrest rates - I include supplemental versions that repeat each analysis for the second “ratio” variable.
 
