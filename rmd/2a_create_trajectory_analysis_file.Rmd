@@ -14,6 +14,7 @@ rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 ```
 
 ```{r functions}
+options(scipen = 100)
 
 ```
 
@@ -42,14 +43,33 @@ combo <- readRDS(here::here("rda/combined_populations_arrests.rds")) # 161,448 r
 
 #Create outcome variables and save to analysis file
 ```{r}
-traj1 <- combo %>% 
-  mutate(young_adult_rate = c_young_adult_tot/n_young_adults *1000,
+traj1 <-   dplyr::mutate(combo, young_adult_rate = c_young_adult_tot/n_young_adults *1000,
          other_adult_rate = c_other_adult_tot/n_other_adults *1000,
          all_adult_rate = c_all_adult_tot/n_all_adults *1000,
          young_to_other_ratio = young_adult_rate/other_adult_rate)
 
 #check new variables
 checkdat3 <- select(traj1, contains("adult"),young_to_other_ratio) %>% head(3) #looks good
+
+#ggplot() +
+
+#Examining really large rates
+options(scipen = 100)
+describe(traj1$young_adult_rate)
+check_large_rate <- filter(traj1, young_adult_rate > 500) %>% select(young_adult_rate, year, state,fips_clean, n_young_adults, other_adult_rate)
+#184 records have young adult rates well over 1000 per 1000 people. While not impossible, since one person could be arrested several times, it seems unlikely that some of these values are real. I will top code at 1000. March 4, 2022
+
+traj2 <- traj1
+traj2$young_adult_rate[traj2$young_adult_rate > 1000] <- 1000
+traj2$other_adult_rate[traj2$other_adult_rate > 1000] <- 1000
+traj2$all_adult_rate[traj2$all_adult_rate > 1000] <- 1000
+
+#checking the recode
+describe(traj2$young_adult_rate)
+describe(traj2$other_adult_rate)
+describe(traj2$all_adult_rate)
+
+
 
 ```
 
@@ -66,10 +86,10 @@ Dropping the 16,068 records from population data that did not match to arrest da
 
 ```{r}
 
-traj2 <- filter(traj1, inarrest==1) %>% 
+traj3 <- filter(traj2, inarrest==1) %>% 
   select(-state,-county.fips,-state.fips, -State) 
 
-describe(traj2)
+describe(traj3)
 
 ```
 
@@ -77,6 +97,6 @@ describe(traj2)
 #Save files to type rds
 ```{r}
 saveRDS(traj1, file = file.path(rdadir, "trajectory_pre_analysis_file.rds"))
-saveRDS(traj2, file = file.path(rdadir, "trajectory_analysis_file.rds"))
+saveRDS(traj3, file = file.path(rdadir, "trajectory_analysis_file.rds"))
 ```
 
