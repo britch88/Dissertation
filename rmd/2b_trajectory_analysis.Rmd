@@ -5,26 +5,142 @@ date: "2/18/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+
+```{r}
+Examples
+# Loads crimCV into the interpreter
+library(crimCV)
+# Load the "divide-and-round" TO1 dataset
+data(TO1adj)
+# Fit a 2 component ZIP(tau) model of degree 2. Here the CVE is not
+# calculated and only ~1/4 of the data is used so that the code will
+# run quickly enough to satisfy CRAN's package policies. To compute
+# CVE run as:
+# out1<-crimCV(TO1adj,2,dpolyp=2,rcv=TRUE)
+subTO1adj<-TO1adj[1:100,]
+out1<-crimCV(subTO1adj,2,dpolyp=2,init=5)
+out2<-crimCV(subTO1adj,3,dpolyp=2,init=5)
+out3<-crimCV(subTO1adj,4,dpolyp=2,init=5)
+
+# Plot the component trajectories
+plot(out1)
+plot(out2)
+# Print out some useful output
+summary(out1)
 ```
 
-## R Markdown
+#trying andrew wheeler's loop
+```{r}
+results <- c()  #initializing a set of empty lists to store the seperate models
+measures <- data.frame(cbind(groups=c(),llike=c(),AIC=c(),BIC=c(),CVE=c())) #nicer dataframe to check out model 
+                                                                            
+#model selection diagnostics
+max <- 4 #this is the number of grouping solutions to check
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+#looping through models
+for (i in 1:max){
+    model <- crimCV(subTO1adj,i,rcv=TRUE,dpolyp=3,dpolyl=3)
+    results <- c(results, list(model))
+    measures <- rbind(measures,data.frame(cbind(groups=i,llike=model$llike,
+                                          AIC=model$AIC,BIC=model$BIC,CVE=model$cv)))
+    #save(measures,results,file=paste0("Traj",as.character(i),".RData")) #save result
+    }
+#table of the model results
+measures
+plot(out3)
 ```
 
-## Including Plots
+```{r}
+library(crimCV)
+library(ggplot2)
 
-You can also embed plots, for example:
+long_traj <- function(model,data){
+  df <- data.frame(data)
+  vars <- names(df)
+  prob <- model['gwt'] #posterior probabilities
+  df$GMax <- apply(prob$gwt,1,which.max) #which group # is the max
+  df$PMax <- apply(prob$gwt,1,max)       #probability in max group
+  df$Ord <- 1:dim(df)[1]                 #Order of the original data
+  prob <- data.frame(prob$gwt)
+  names(prob) <- paste0("G",1:dim(prob)[2]) #Group probabilities are G1, G2, etc.
+  longD <- reshape(data.frame(df,prob), varying = vars, v.names = "y", 
+                   timevar = "x", times = 1:length(vars), 
+                   direction = "long") #Reshape to long format, time is x, y is original count data
+  return(longD)                        #GMax is the classified group, PMax is the probability in that group
+}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+weighted_means <- function(model,long_data){
+  G_names <- paste0("G",1:model$ng)
+  G <- long_data[,G_names]
+  W <- G*long_data$y                                    #Multiple weights by original count var
+  Agg <- aggregate(W,by=list(x=long_data$x),FUN="sum")  #then sum those products
+  mass <- colSums(model$gwt)                            #to get average divide by total mass of the weight
+  for (i in 1:model$ng){
+    Agg[,i+1] <- Agg[,i+1]/mass[i]
+  }
+  long_weight <- reshape(Agg, varying=G_names, v.names="w_mean",
+                         timevar = "Group", times = 1:model$ng, 
+                         direction = "long")           #reshape to long
+  return(long_weight)
+}
+  
+pred_means <- function(model){
+    prob <- model$prob               #these are the model predicted means
+    Xb <- model$X %*% model$beta     #see getAnywhere(plot.dmZIPt), near copy
+    lambda <- exp(Xb)                #just returns data frame in long format
+    p <- exp(-model$tau * t(Xb))
+    p <- t(p)
+    p <- p/(1 + p)
+    mu <- (1 - p) * lambda
+    t <- 1:nrow(mu)
+    myDF <- data.frame(x=t,mu)
+    long_pred <- reshape(myDF, varying=paste0("X",1:model$ng), v.names="pred_mean",
+                         timevar = "Group", times = 1:model$ng, direction = "long")
+    return(long_pred)
+}
+
+#Note, if you estimate a ZIP model instead of the ZIP-tau model
+#use this function instead of pred_means
+pred_means_Nt <- function(model){
+    prob <- model$prob               #these are the model predicted means
+    Xb <- model$X %*% model$beta     #see getAnywhere(plot.dmZIP), near copy
+    lambda <- exp(Xb)                #just returns data frame in long format
+	Zg <- model$Z %*% model$gamma
+    p <- exp(Zg)
+    p <- p/(1 + p)
+    mu <- (1 - p) * lambda
+    t <- 1:nrow(mu)
+    myDF <- data.frame(x=t,mu)
+    long_pred <- reshape(myDF, varying=paste0("X",1:model$ng), v.names="pred_mean",
+                         timevar = "Group", times = 1:model$ng, direction = "long")
+    return(long_pred)
+}
+
+occ <- function(long_data){
+ subdata <- subset(long_data,x==1)
+ agg <- aggregate(subdata$PMax,by=list(group=subdata$GMax),FUN="mean")
+ names(agg)[2] <- "AvePP" #average posterior probabilites
+ agg$Freq <- as.data.frame(table(subdata$GMax))[,2]
+ n <- agg$AvePP/(1 - agg$AvePP)
+ p <- agg$Freq/sum(agg$Freq)
+ d <- p/(1-p)
+ agg$OCC <- n/d #odds of correct classification
+ agg$ClassProp <- p #observed classification proportion
+ #predicted classification proportion
+ agg$PredProp <- colSums(as.matrix(subdata[,grep("^[G][0-9]", names(subdata), value=TRUE)]))/sum(agg$Freq) 
+ #Jeff Ward said I should be using PredProb instead of Class prop for OCC
+ agg$occ_pp <- n/ (agg$PredProp/(1-agg$PredProp))
+ return(agg)
+}
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#restructure data to wide format
+
+
+
+#try running code on small N of obs
+
+
+
+#run analysis on full data set
