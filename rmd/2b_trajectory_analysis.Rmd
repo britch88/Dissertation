@@ -5,6 +5,7 @@ date: "2/18/2022"
 output: html_document
 ---
 
+<<<<<<< HEAD
 
 ```{r}
 Examples
@@ -143,4 +144,59 @@ occ <- function(long_data){
 
 
 
+=======
+
+```{r}
+Examples
+# Loads crimCV into the interpreter
+library(crimCV)
+# Load the "divide-and-round" TO1 dataset
+data(TO1adj)
+# Fit a 2 component ZIP(tau) model of degree 2. Here the CVE is not
+# calculated and only ~1/4 of the data is used so that the code will
+# run quickly enough to satisfy CRAN's package policies. To compute
+# CVE run as:
+# out1<-crimCV(TO1adj,2,dpolyp=2,rcv=TRUE)
+subTO1adj<-TO1adj[1:100,]
+out1<-crimCV(subTO1adj,2,dpolyp=2,init=5)
+out2<-crimCV(subTO1adj,3,dpolyp=2,init=5)
+out3<-crimCV(subTO1adj,4,dpolyp=2,init=5)
+
+# Plot the component trajectories
+plot(out1)
+plot(out2)
+# Print out some useful output
+summary(out1)
+```
+
+#trying andrew wheeler's loop
+```{r}
+results <- c()  #initializing a set of empty lists to store the seperate models
+measures <- data.frame(cbind(groups=c(),llike=c(),AIC=c(),BIC=c(),CVE=c())) #nicer dataframe to check out model 
+                                                                            
+#model selection diagnostics
+max <- 4 #this is the number of grouping solutions to check
+
+#looping through models
+for (i in 1:max){
+    model <- crimCV(subTO1adj,i,rcv=TRUE,dpolyp=3,dpolyl=3)
+    results <- c(results, list(model))
+    measures <- rbind(measures,data.frame(cbind(groups=i,llike=model$llike,
+                                          AIC=model$AIC,BIC=model$BIC,CVE=model$cv)))
+    #save(measures,results,file=paste0("Traj",as.character(i),".RData")) #save result
+    }
+#table of the model results
+measures
+plot(out3)
+```
+
+#restructure data to wide format
+
+
+
+#try running code on small N of obs
+
+
+
+>>>>>>> a01afe58eb9be20896763decb680d548037a1c77
 #run analysis on full data set
