@@ -53,7 +53,13 @@ checkdat3 <- select(traj1, contains("adult"),young_to_other_ratio) %>% head(3) #
 
 #ggplot() +
 
-#Examining really large rates
+
+
+```
+
+
+#Examining and top-coding really large rates
+```{r}
 options(scipen = 100)
 describe(traj1$young_adult_rate)
 quantile(traj1$young_adult_rate, c(.95,.96,.97,.975, .98,.99,.995,.9975), na.rm=TRUE)
@@ -79,6 +85,11 @@ describe(traj2$all_adult_rate)
 
 ```
 
+#Checking for duplicates
+```{r}
+duplicated(Sepal.Length, Petal.Width, .keep_all = TRUE)
+
+```
 
 #In the future, we might incorporate another data set that contains additional county-level info
 ```{r}

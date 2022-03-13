@@ -5,55 +5,23 @@ date: "2/18/2022"
 output: html_document
 ---
 
-# testing crimCV package
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+# packages
 ```{r}
 Examples
 # Loads crimCV into the interpreter
 library(crimCV)
-# Load the "divide-and-round" TO1 dataset
-data(TO1adj)
-# Fit a 2 component ZIP(tau) model of degree 2. Here the CVE is not
-# calculated and only ~1/4 of the data is used so that the code will
-# run quickly enough to satisfy CRAN's package policies. To compute
-# CVE run as:
-# out1<-crimCV(TO1adj,2,dpolyp=2,rcv=TRUE)
-subTO1adj<-TO1adj[1:100,]
-out1<-crimCV(subTO1adj,2,dpolyp=2,init=5)
-out2<-crimCV(subTO1adj,3,dpolyp=2,init=5)
-out3<-crimCV(subTO1adj,4,dpolyp=2,init=5)
-
-# Plot the component trajectories
-plot(out1)
-plot(out2)
-# Print out some useful output
-summary(out1)
+library(tidyverse)
 ```
 
-#trying andrew wheeler's loop
+# Options and Andrew Wheeler's helper functions
 ```{r}
-results <- c()  #initializing a set of empty lists to store the seperate models
-measures <- data.frame(cbind(groups=c(),llike=c(),AIC=c(),BIC=c(),CVE=c())) #nicer dataframe to check out model 
-                                                                            
-#model selection diagnostics
-max <- 4 #this is the number of grouping solutions to check
-
-#looping through models
-for (i in 1:max){
-    model <- crimCV(subTO1adj,i,rcv=TRUE,dpolyp=3,dpolyl=3)
-    results <- c(results, list(model))
-    measures <- rbind(measures,data.frame(cbind(groups=i,llike=model$llike,
-                                          AIC=model$AIC,BIC=model$BIC,CVE=model$cv)))
-    #save(measures,results,file=paste0("Traj",as.character(i),".RData")) #save result
-    }
-#table of the model results
-measures
-plot(out3)
-```
-
-# Testing some of Andrew Wheeler's helper functions
-```{r}
-library(crimCV)
-library(ggplot2)
+options(scipen = 100)
 
 long_traj <- function(model,data){
   df <- data.frame(data)
@@ -135,6 +103,74 @@ occ <- function(long_data){
  return(agg)
 }
 ```
+
+
+# load data
+```{r}
+analysis.dat1 <- readRDS(here::here("rda/trajectory_analysis_file.rds"))
+```
+
+#restructure data to wide format so that each time period is a column, start with just young adult rate of arrest
+```{r}
+analysis.dat2 <- analysis.dat1 %>% 
+  pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate) %>% 
+  select(sort(names(analysis.dat2))) %>% 
+  arrange(fips_clean) %>% 
+  filter(fips_clean != "0") 
+
+
+#Turn data into matrix with ID variable omitted
+analysis.mat1 <- as.matrix(analysis.dat2[,1:46]) #turn into matrix
+summary(analysis.dat2) #check contents
+analysis.mat1[1:10,1:5]
+  
+```
+
+
+
+
+#try running code on small N of obs
+
+# Load the "divide-and-round" TO1 dataset
+data(TO1adj)
+# Fit a 2 component ZIP(tau) model of degree 2. Here the CVE is not
+# calculated and only ~1/4 of the data is used so that the code will
+# run quickly enough to satisfy CRAN's package policies. To compute
+# CVE run as:
+# out1<-crimCV(TO1adj,2,dpolyp=2,rcv=TRUE)
+subTO1adj<-TO1adj[1:100,]
+out1<-crimCV(subTO1adj,2,dpolyp=2,init=5)
+out2<-crimCV(subTO1adj,3,dpolyp=2,init=5)
+out3<-crimCV(subTO1adj,4,dpolyp=2,init=5)
+
+# Plot the component trajectories
+plot(out1)
+plot(out2)
+# Print out some useful output
+summary(out1)
+```
+
+#trying andrew wheeler's loop
+```{r}
+results <- c()  #initializing a set of empty lists to store the seperate models
+measures <- data.frame(cbind(groups=c(),llike=c(),AIC=c(),BIC=c(),CVE=c())) #nicer dataframe to check out model 
+                                                                            
+#model selection diagnostics
+max <- 4 #this is the number of grouping solutions to check
+
+#looping through models
+for (i in 1:max){
+    model <- crimCV(subTO1adj,i,rcv=TRUE,dpolyp=3,dpolyl=3)
+    results <- c(results, list(model))
+    measures <- rbind(measures,data.frame(cbind(groups=i,llike=model$llike,
+                                          AIC=model$AIC,BIC=model$BIC,CVE=model$cv)))
+    #save(measures,results,file=paste0("Traj",as.character(i),".RData")) #save result
+    }
+#table of the model results
+measures
+plot(out3)
+```
+
 
 # Checking out Andrew Wheeler's plotting code
 "Now most effort seems to be spent on using model selection criteria to pick the number of groups, what may be called relative model comparisons. Once you pick the number of groups though, you should still be concerned with how well the model replicates the data at hand, e.g. absolute model comparisons. The graphs that follow help assess this. First we will use our helper functions to make three new objects. The first function, long_traj, takes the original model object, out1, as well as the original matrix data used to estimate the model, TO1adj. The second function, weighted_means, takes the original model object and then the newly created long_data longD. The third function, pred_means, just takes the model output and generates a data frame in wide format for plotting (it is the same underlying code for plotting the model).
@@ -223,11 +259,4 @@ p6
 ```
 
 
-
-
-#restructure data to wide format
-
-
-
-#try running code on small N of obs
 
