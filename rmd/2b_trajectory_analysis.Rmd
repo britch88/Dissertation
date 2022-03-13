@@ -17,6 +17,8 @@ Examples
 # Loads crimCV into the interpreter
 library(crimCV)
 library(tidyverse)
+library(Hmisc)
+
 ```
 
 # Options and Andrew Wheeler's helper functions
@@ -105,31 +107,70 @@ occ <- function(long_data){
 ```
 
 
+
 # load data
 ```{r}
 analysis.dat1 <- readRDS(here::here("rda/trajectory_analysis_file.rds"))
+
+
+```
+
+# remove duplicates
+
+```{r}
+analysis.dat2 <- filter(analysis.dat1,fips_clean != "0")
+#duplicated(analysis.dat1[,1:7])
+
+#checkdup <- analysis.dat1[duplicated(analysis.dat1[,1:7])]
+
+#check.dup <- analysis.dat2 %>% 
+ # group_by(year, fips_clean) %>% 
+ # mutate(dupe = n()>1) %>% filter(dupe==TRUE)
+
+
 ```
 
 #restructure data to wide format so that each time period is a column, start with just young adult rate of arrest
 ```{r}
-analysis.dat2 <- analysis.dat1 %>% 
-  pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate) %>% 
-  select(sort(names(analysis.dat2))) %>% 
-  arrange(fips_clean) %>% 
-  filter(fips_clean != "0") 
+analysis.dat3<- analysis.dat2 %>% 
+  pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate, names_prefix = "year") %>% 
+  arrange(fips_clean)  %>% select(sort(names(analysis.dat3)))
 
 
 #Turn data into matrix with ID variable omitted
-analysis.mat1 <- as.matrix(analysis.dat2[,1:46]) #turn into matrix
-summary(analysis.dat2) #check contents
+analysis.mat1 <- as.matrix(analysis.dat3[,2:47]) #turn into matrix
+
+
+summary(analysis.dat3) #check contents
 analysis.mat1[1:10,1:5]
   
 ```
 
-
-
-
 #try running code on small N of obs
+```{r}
+#test.dat <- as.data.frame(analysis.dat2[1:180,1:47])
+
+#test.matrix <-as.double(test.dat[,1:46])
+#test.matrix2 <- data.matrix(test.dat, rownames.force = NA)
+
+test.dat <- analysis.mat1[304:400,] #cannot handle missing values...
+test.dat2 <- analysis.mat1[300:400,]
+
+# Fit a 2 component ZIP(tau) model of degree 2. Here the CVE is not
+# calculated and only ~1/4 of the data is used so that the code will
+# run quickly enough to satisfy CRAN's package policies. To compute
+# CVE run as: # out1<-crimCV(TO1adj,2,dpolyp=2,rcv=TRUE)
+out1<-crimCV(test.dat,2,dpolyp=2,init=5, rcv=FALSE)
+
+# Next time, try replacing NA with -1
+test.dat2[is.na(test.dat2)]<- -1
+
+out2<-crimCV(test.dat2,2,dpolyp=2,init=5, rcv=FALSE)
+
+
+```
+
+
 
 # Load the "divide-and-round" TO1 dataset
 data(TO1adj)
@@ -258,5 +299,22 @@ p6 <- ggplot(data=nonw_sum, aes(x=x,y=y,fill=as.factor(Group))) + geom_area(posi
 p6
 ```
 
+
+#failed code
+
+
+
+#convert data columns to numeric
+```{r}
+
+analysis.mat2 <- analysis.mat1
+# Check columns classes
+sapply(analysis.mat2, class)
+
+
+i = c(1:46)
+analysis.mat2[,i] <- apply(analysis.mat2[ , i], 2,            # Specify own function within apply
+                    function(x) as.numeric(as.character(x)))
+```
 
 
