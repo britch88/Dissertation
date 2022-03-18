@@ -21,92 +21,6 @@ library(Hmisc)
 
 ```
 
-# Options and Andrew Wheeler's helper functions
-```{r}
-options(scipen = 100)
-
-long_traj <- function(model,data){
-  df <- data.frame(data)
-  vars <- names(df)
-  prob <- model['gwt'] #posterior probabilities
-  df$GMax <- apply(prob$gwt,1,which.max) #which group # is the max
-  df$PMax <- apply(prob$gwt,1,max)       #probability in max group
-  df$Ord <- 1:dim(df)[1]                 #Order of the original data
-  prob <- data.frame(prob$gwt)
-  names(prob) <- paste0("G",1:dim(prob)[2]) #Group probabilities are G1, G2, etc.
-  longD <- reshape(data.frame(df,prob), varying = vars, v.names = "y", 
-                   timevar = "x", times = 1:length(vars), 
-                   direction = "long") #Reshape to long format, time is x, y is original count data
-  return(longD)                        #GMax is the classified group, PMax is the probability in that group
-}
-
-
-weighted_means <- function(model,long_data){
-  G_names <- paste0("G",1:model$ng)
-  G <- long_data[,G_names]
-  W <- G*long_data$y                                    #Multiple weights by original count var
-  Agg <- aggregate(W,by=list(x=long_data$x),FUN="sum")  #then sum those products
-  mass <- colSums(model$gwt)                            #to get average divide by total mass of the weight
-  for (i in 1:model$ng){
-    Agg[,i+1] <- Agg[,i+1]/mass[i]
-  }
-  long_weight <- reshape(Agg, varying=G_names, v.names="w_mean",
-                         timevar = "Group", times = 1:model$ng, 
-                         direction = "long")           #reshape to long
-  return(long_weight)
-}
-  
-pred_means <- function(model){
-    prob <- model$prob               #these are the model predicted means
-    Xb <- model$X %*% model$beta     #see getAnywhere(plot.dmZIPt), near copy
-    lambda <- exp(Xb)                #just returns data frame in long format
-    p <- exp(-model$tau * t(Xb))
-    p <- t(p)
-    p <- p/(1 + p)
-    mu <- (1 - p) * lambda
-    t <- 1:nrow(mu)
-    myDF <- data.frame(x=t,mu)
-    long_pred <- reshape(myDF, varying=paste0("X",1:model$ng), v.names="pred_mean",
-                         timevar = "Group", times = 1:model$ng, direction = "long")
-    return(long_pred)
-}
-
-#Note, if you estimate a ZIP model instead of the ZIP-tau model
-#use this function instead of pred_means
-pred_means_Nt <- function(model){
-    prob <- model$prob               #these are the model predicted means
-    Xb <- model$X %*% model$beta     #see getAnywhere(plot.dmZIP), near copy
-    lambda <- exp(Xb)                #just returns data frame in long format
-	Zg <- model$Z %*% model$gamma
-    p <- exp(Zg)
-    p <- p/(1 + p)
-    mu <- (1 - p) * lambda
-    t <- 1:nrow(mu)
-    myDF <- data.frame(x=t,mu)
-    long_pred <- reshape(myDF, varying=paste0("X",1:model$ng), v.names="pred_mean",
-                         timevar = "Group", times = 1:model$ng, direction = "long")
-    return(long_pred)
-}
-
-occ <- function(long_data){
- subdata <- subset(long_data,x==1)
- agg <- aggregate(subdata$PMax,by=list(group=subdata$GMax),FUN="mean")
- names(agg)[2] <- "AvePP" #average posterior probabilites
- agg$Freq <- as.data.frame(table(subdata$GMax))[,2]
- n <- agg$AvePP/(1 - agg$AvePP)
- p <- agg$Freq/sum(agg$Freq)
- d <- p/(1-p)
- agg$OCC <- n/d #odds of correct classification
- agg$ClassProp <- p #observed classification proportion
- #predicted classification proportion
- agg$PredProp <- colSums(as.matrix(subdata[,grep("^[G][0-9]", names(subdata), value=TRUE)]))/sum(agg$Freq) 
- #Jeff Ward said I should be using PredProb instead of Class prop for OCC
- agg$occ_pp <- n/ (agg$PredProp/(1-agg$PredProp))
- return(agg)
-}
-```
-
-
 
 # load data
 ```{r}
@@ -134,14 +48,16 @@ analysis.dat2 <- filter(analysis.dat1,fips_clean != "0")
 ```{r}
 analysis.dat3<- analysis.dat2 %>% 
   pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate, names_prefix = "year") %>% 
-  arrange(fips_clean)  %>% select(sort(names(analysis.dat3)))
+  arrange(fips_clean)  
+
+analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
 
 
 #Turn data into matrix with ID variable omitted
-analysis.mat1 <- as.matrix(analysis.dat3[,2:47]) #turn into matrix
+analysis.mat1 <- as.matrix(analysis.dat4[,2:47]) #turn into matrix
 
 
-summary(analysis.dat3) #check contents
+summary(analysis.dat4) #check contents
 analysis.mat1[1:10,1:5]
   
 ```
@@ -153,55 +69,35 @@ analysis.mat1[1:10,1:5]
 #test.matrix <-as.double(test.dat[,1:46])
 #test.matrix2 <- data.matrix(test.dat, rownames.force = NA)
 
-test.dat <- analysis.mat1[304:400,] #cannot handle missing values...
+#test.dat <- analysis.mat1[304:400,] #cannot handle missing values...
 test.dat2 <- analysis.mat1[300:400,]
 
 # Fit a 2 component ZIP(tau) model of degree 2. Here the CVE is not
 # calculated and only ~1/4 of the data is used so that the code will
 # run quickly enough to satisfy CRAN's package policies. To compute
 # CVE run as: # out1<-crimCV(TO1adj,2,dpolyp=2,rcv=TRUE)
-out1<-crimCV(test.dat,2,dpolyp=2,init=5, rcv=FALSE)
+#out1<-crimCV(test.dat,2,dpolyp=2,init=5, rcv=FALSE)
 
 # Next time, try replacing NA with -1
 test.dat2[is.na(test.dat2)]<- -1
 
-out2<-crimCV(test.dat2,2,dpolyp=2,init=5, rcv=FALSE)
+out1<-crimCV(test.dat2,2,dpolyp=2,init=5, rcv=TRUE)
 
 
 ```
 
-
-
-# Load the "divide-and-round" TO1 dataset
-data(TO1adj)
-# Fit a 2 component ZIP(tau) model of degree 2. Here the CVE is not
-# calculated and only ~1/4 of the data is used so that the code will
-# run quickly enough to satisfy CRAN's package policies. To compute
-# CVE run as:
-# out1<-crimCV(TO1adj,2,dpolyp=2,rcv=TRUE)
-subTO1adj<-TO1adj[1:100,]
-out1<-crimCV(subTO1adj,2,dpolyp=2,init=5)
-out2<-crimCV(subTO1adj,3,dpolyp=2,init=5)
-out3<-crimCV(subTO1adj,4,dpolyp=2,init=5)
-
-# Plot the component trajectories
-plot(out1)
-plot(out2)
-# Print out some useful output
-summary(out1)
-```
-
-#trying andrew wheeler's loop
+#Try running A.W.'s loop on small number of obs
 ```{r}
+
 results <- c()  #initializing a set of empty lists to store the seperate models
 measures <- data.frame(cbind(groups=c(),llike=c(),AIC=c(),BIC=c(),CVE=c())) #nicer dataframe to check out model 
                                                                             
 #model selection diagnostics
-max <- 4 #this is the number of grouping solutions to check
+max <- 6 #this is the number of grouping solutions to check
 
 #looping through models
 for (i in 1:max){
-    model <- crimCV(subTO1adj,i,rcv=TRUE,dpolyp=3,dpolyl=3)
+    model <- crimCV(test.dat2,i,rcv=TRUE,dpolyp=2,dpolyl=3)
     results <- c(results, list(model))
     measures <- rbind(measures,data.frame(cbind(groups=i,llike=model$llike,
                                           AIC=model$AIC,BIC=model$BIC,CVE=model$cv)))
@@ -209,17 +105,22 @@ for (i in 1:max){
     }
 #table of the model results
 measures
-plot(out3)
+
+#Re-run best model and output results to object
+best.mod1 <- crimCV(test.dat2,5,rcv=TRUE, dpolyp =2, dpolyl =3)
+plot(best.mod1)
+
 ```
+
 
 
 # Checking out Andrew Wheeler's plotting code
 "Now most effort seems to be spent on using model selection criteria to pick the number of groups, what may be called relative model comparisons. Once you pick the number of groups though, you should still be concerned with how well the model replicates the data at hand, e.g. absolute model comparisons. The graphs that follow help assess this. First we will use our helper functions to make three new objects. The first function, long_traj, takes the original model object, out1, as well as the original matrix data used to estimate the model, TO1adj. The second function, weighted_means, takes the original model object and then the newly created long_data longD. The third function, pred_means, just takes the model output and generates a data frame in wide format for plotting (it is the same underlying code for plotting the model).
 
 ```{r}
-longD <- long_traj(model=out3,data=subTO1adj)
-x <- weighted_means(model=out3,long_data=longD)
-pred <- pred_means(model=out3)
+longD <- long_traj(model=best.mod1,data=test.dat2)
+x <- weighted_means(model=best.mod1,long_data=longD)
+pred <- pred_means(model=best.mod1)
 #We can subsequently use the long data longD to plot the individual trajectories faceted by their assigned groups. I have an answer on cross validated that shows how effective this small multiple design idea can be to help disentangle complicated plots.
 
 
@@ -232,11 +133,12 @@ p
 #plot of predicted values + weighted means
 p2 <- ggplot() + geom_line(data=pred, aes(x=x,y=pred_mean,col=as.factor(Group))) + 
                  geom_line(data=x, aes(x=x,y=w_mean,col=as.factor(Group))) + 
-                geom_point(data=x, aes(x=x,y=w_mean,col=as.factor(Group)))
+                geom_point(data=x, aes(x=x,y=w_mean,col=as.factor(Group))) +
+                facet_grid(Group~.)
 p2
 ```
 
-Here you can see that the estimated trajectories are not a very good fit to the data. Pretty much eash series has a peak before the predicted curve, and all of the series except for 2 don’t look like very good candidates for polynomial curves.
+Here you can see that the estimated trajectories are not a very good fit to the data. Pretty much each series has a peak before the predicted curve, and all of the series except for 2 don’t look like very good candidates for polynomial curves.
 
 
 
@@ -298,23 +200,4 @@ names(nonw_sum)[3] <- "y"
 p6 <- ggplot(data=nonw_sum, aes(x=x,y=y,fill=as.factor(Group))) + geom_area(position='stack')
 p6
 ```
-
-
-#failed code
-
-
-
-#convert data columns to numeric
-```{r}
-
-analysis.mat2 <- analysis.mat1
-# Check columns classes
-sapply(analysis.mat2, class)
-
-
-i = c(1:46)
-analysis.mat2[,i] <- apply(analysis.mat2[ , i], 2,            # Specify own function within apply
-                    function(x) as.numeric(as.character(x)))
-```
-
 
