@@ -83,7 +83,7 @@ analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
     
 ```    
 
-## Set the parameters for your model of choice
+## Re-run models
 ```{r}
   
 #re-run loop that includes chosen model
@@ -92,8 +92,8 @@ analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
 # GBTM CLUSTERING: crimCV
 ## set the grid of models to evaluate
   # Set: 
-    n.cluster = c(1) # 1.which k's to evaluate, 
-    p.poly = c(1) # 2. which p's to evaluate, 
+    n.cluster = c(1,1,1,1,1,6) # 1.which k's to evaluate, 
+    p.poly = c(3) # 2. which p's to evaluate, 
     rcv = F # 3. do you want to run cross validation? T/F
 
 ## model evaluation
@@ -159,10 +159,13 @@ analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
   points.for.cv.plot = points.for.cv.plot[-1,]
 
 
+```
 
+#set parameters for model of choice
+```{r} 
 # Select k and p 
-  k.set = 1
-  p.set = 1
+  k.set = 6
+  p.set = 3
   
   
   
@@ -192,9 +195,13 @@ analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
   
     members.per.cluster = data.frame(table(gbtm.members$cluster))
     
+```
 
+```{r}
 ## Plot estimated trajectories
-
+ # gbtm.members <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/gbtm.members.rds")
+  
+    members.per.cluster = data.frame(table(gbtm.members$cluster))
   
   # estimated trajectories
   
@@ -228,7 +235,10 @@ analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
     saveRDS(long.test.dat,"rda/Intermediate/long.test.dat.rds")
    # long.test.dat <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/long.test.dat.rds")
   
-    
+```
+
+#more plots
+```{r}
   
     polynomial.model.results = summary(lm(value ~ -1+poly(time,p.set):cluster+cluster, long.test.dat))
     model.spec = round(polynomial.model.results$coefficients[,1],2)

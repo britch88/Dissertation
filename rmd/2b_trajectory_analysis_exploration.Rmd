@@ -26,7 +26,7 @@ out3<-crimCV(subTO1adj,4,dpolyp=2,init=5)
 plot(out1)
 plot(out2)
 # Print out some useful output
-summary(out1)
+summary(out3)
 ```
 
 #trying andrew wheeler's loop
@@ -143,16 +143,22 @@ Now most effort seems to be spent on using model selection criteria to pick the 
 longD <- long_traj(model=out1,data=TO1adj)
 x <- weighted_means(model=out1,long_data=longD)
 pred <- pred_means(model=out1)
-We can subsequently use the long data longD to plot the individual trajectories faceted by their assigned groups. I have an answer on cross validated that shows how effective this small multiple design idea can be to help disentangle complicated plots.
+
+```
+
+#We can subsequently use the long data longD to plot the individual trajectories faceted by their assigned groups. I have an answer on cross validated that shows how effective this small multiple design idea can be to help disentangle complicated plots.
 
 
 #plot of individual trajectories in small multiples by group
+```{r}
 p <- ggplot(data=longD, aes(x=x,y=y,group=Ord)) + geom_line(alpha = 0.1) + facet_wrap(~GMax)
 p 
 
 Plotting the individual trajectories can show how well they fit the predicted model, as well as if there are any outliers. You could get more fancy with jittering (helpful since there is so much overlap in the low counts) but just plotting with a high transparency helps quite abit. This second graph plots the predicted means along with the weighted means. What the weighted_means function does is use the posterior probabilities of groups, and then calculates the observed group averages per time point using the posterior probabilities as the weights.
+```
 
 #plot of predicted values + weighted means
+```{r}
 p2 <- ggplot() + geom_line(data=pred, aes(x=x,y=pred_mean,col=as.factor(Group))) + 
                  geom_line(data=x, aes(x=x,y=w_mean,col=as.factor(Group))) + 
                 geom_point(data=x, aes(x=x,y=w_mean,col=as.factor(Group)))
@@ -164,31 +170,33 @@ Here you can see that the estimated trajectories are not a very good fit to the 
 It ends up that often the weighted means are very nearly equivalent to the unweighted means (just aggregating means based on the classified group). In this example the predicted values are a colored line, the weighted means are a colored line with superimposed points, and the non-weighted means are just a black line.
 
 #predictions, weighted means, and non-weighted means
+```{r}
 nonw_means <- aggregate(longD$y,by=list(Group=longD$GMax,x=longD$x),FUN="mean")
 names(nonw_means)[3] <- "y"
 
 p3 <- p2 + geom_line(data=nonw_means, aes(x=x,y=y), col='black') + facet_wrap(~Group)
 p3
 
-
+```
 
 
 You can see the non-weighted means are almost exactly the same as the weighted ones. For group 3 you typically need to go to the hundredths to see a difference.
 
 #check out how close
+```{r}
 nonw_means[nonw_means$Group==3,'y'] -  x[x$Group==3,'w_mean']
-You can subsequently superimpose the predicted group means over the individual trajectories as well.
+#You can subsequently superimpose the predicted group means over the individual trajectories as well.
 
 #superimpose predicted over ind trajectories
 pred$GMax <- pred$Group
 p4 <- ggplot() + geom_line(data=pred, aes(x=x,y=pred_mean), col='red') + 
                  geom_line(data=longD, aes(x=x,y=y,group=Ord), alpha = 0.1) + facet_wrap(~GMax)
 p4
-
+```
 
 
 Two types of absolute fit measures I’ve seen advocated in the past are the average maximum posterior probability per group and the odds of correct classification. The occ function calculates these numbers given two vectors (one of the max probabilities and the other of the group classifications). We can get this info from our long data by just selecting a subset from one time period. Here the output at the console shows that we have quite large average posterior probabilities as well as high odds of correct classification. (Also updated to included the observed classified proportions and the predicted proportions based on the posterior probabilities. Again, these all show very good model fit.) Update: Jeff Ward sent me a note saying I should be using the predicted proportion in each group for the occ calculation, not the assigned proportion based on the max. post. prob. So I have updated to include the occ_pp column for this, but left the old occ column in as a paper trail of my mistake.
-
+```{r}
 occ(longD)
 
 
@@ -199,14 +207,16 @@ A plot to accompany this though is a jittered dot plot showing the maximum poste
 subD <- longD[x==1,]
 p5 <- ggplot(data=subD, aes(x=as.factor(GMax),y=PMax)) + geom_point(position = "jitter", alpha = 0.2)
 p5
-
+```
 
 Remember that these latent class models are fuzzy classifiers. That is each point has a probability of belonging to each group. A scatterplot matrix of the individual probabilities will show how well the groups are separated. Perfect separation into groups will result in points hugging along the border of the graph, and points in the middle suggest ambiguity in the class assignment. You can see here that each group closer in number has more probability swapping between them.
 
 #scatterplot matrix
+```{r}
 library(GGally)
 sm <- ggpairs(data=subD, columns=4:7)
 sm
+```
 
 
 And the last time series plot I have used previously is a stacked area chart.
@@ -490,7 +500,7 @@ source(url)
   
     # select model
     ind.k = which(grepl(k.set,names(cv.eval.list)))
-    ind.p = which(grepl(p.set,names(cv.eval.list[[ind.k]])))
+`    ind.p = which(grepl(p.set,names(cv.eval.list[[ind.k]])))
     # retrieve participants membership
     gbtm.members = data.frame(ID =  rownames(df),
                                    cluster = apply(summary(cv.eval.list[[ind.k]][[ind.p]]),

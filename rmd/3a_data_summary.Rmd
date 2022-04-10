@@ -332,6 +332,41 @@ ggplot(data=checkrates) +
 
 
 ```{r}
+# load data
+summarydat1 <- readRDS(here::here("/data/share/xproject/training/practice/henderson/dissertation/rda/trajectory_analysis_file.rds"))
+
+
+# remove duplicates
+summarydat2 <- filter(summarydat1,fips_clean != "0")
+
+# Create a national arrest rate data set
+nationaldat <- summarydat2 %>%  summarise(total.arrests = sum(c_young_adult_tot), 
+                                          total.pop = sum(n_young_adults),
+                                          total.rate = total.arrests/total.pop * 1000)
+
+
+#restructure data to wide format so that each time period is a column, start with just young adult rate of arrest
+summarydat3<- summarydat2 %>% 
+  pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate, names_prefix = "year") %>% 
+  arrange(fips_clean)  
+
+summarydat4 <- summarydat3 %>% select(sort(names(analysis.dat3)))
+
+
+#Turn data into matrix with ID variable omitted
+#analysis.mat1 <- as.matrix(analysis.dat4[,2:47]) #turn into matrix
+
+#Replace NA's with negative numbers so code runs; According to CRAN page, negative numbers are treated as missings
+#analysis.mat2 <- analysis.mat1
+
+#analysis.mat2[is.na(analysis.mat2)]<- -1
+
+summary(analysis.dat4) #check contents
+analysis.mat2[1:10,1:5]
+
+
+
+
 
 ```
 
