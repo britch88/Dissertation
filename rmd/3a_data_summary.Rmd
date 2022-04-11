@@ -343,12 +343,21 @@ summarydat2 <- filter(summarydat1,fips_clean != "0")
 nationaldat <- summarydat2 %>% group_by(year) %>%  summarise(total.arrests = sum(c_young_adult_tot), 
                                           total.pop = sum(n_young_adults, na.rm=TRUE),
                                           total.rate = total.arrests/total.pop * 1000,
-                                          avg.rate = mean(young_adult_rate, na.rm = TRUE))
+                                          avg.rate = mean(young_adult_rate, na.rm = TRUE),
+                                          lower = avg.rate - (sd(young_adult_rate, na.rm = TRUE)/sqrt(3142)),
+                                          upper = avg.rate + (sd(young_adult_rate, na.rm = TRUE)/sqrt(3142)))
 
 
-ggpplot(nationaldat, aes(x=year)) +
-  geom_line(aes(y=avg.rate))
-
+ggplot(nationaldat, aes(x=year)) +
+  geom_line(aes(y=avg.rate, color = "Average County Rate")) +
+  geom_line(aes(y=total.rate, color = "National Rate")) + 
+  geom_line(aes(y=lower), col = "lightblue") +
+  geom_line(aes(y=upper), col = "lightblue") +
+  scale_y_continuous(limits = c(0,200)) +
+  scale_x_continuous(limits = c(1974,2019)) +
+  scale_color_manual(name="",
+                      breaks = c("Average County Rate","National Rate"),
+                      values = c("Average County Rate" = "blue", "National Rate" = "black"))
 
 
 
