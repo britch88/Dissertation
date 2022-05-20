@@ -89,12 +89,23 @@ analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
 best.mod1 <-crimCV(df,6,dpolyp=3,dpolyl=3, rcv = FALSE, init=5)
 plot(best.mod1)
 summary(best.mod1)
+best.mod.names <- best
+
 
 best.mod.county.prob <- as.data.frame(summary(best.mod1))
+best.mod.names <- best.mod.county.prob
+rownames(best.mod.names) = test.data$fips_clean
+best.mod.names$fips_clean <- rownames(best.mod.names)
 saveRDS(best.mod.county.prob,"rda/best_mod_county_prob.rds")
+saveRDS(best.mod.names,"rda/best_mod_names.rds")
 
 ```
 
+#Sensitivity Tests to Try
+```{r}
+# remove counties that aren't well classified according to posterior probabilities
+# try with cross validated errors
+```
 
 
 
@@ -102,6 +113,9 @@ saveRDS(best.mod.county.prob,"rda/best_mod_county_prob.rds")
 "Now most effort seems to be spent on using model selection criteria to pick the number of groups, what may be called relative model comparisons. Once you pick the number of groups though, you should still be concerned with how well the model replicates the data at hand, e.g. absolute model comparisons. The graphs that follow help assess this. First we will use our helper functions to make three new objects. The first function, long_traj, takes the original model object, out1, as well as the original matrix data used to estimate the model, TO1adj. The second function, weighted_means, takes the original model object and then the newly created long_data longD. The third function, pred_means, just takes the model output and generates a data frame in wide format for plotting (it is the same underlying code for plotting the model).
 
 ```{r}
+#if needed, load file containing estimates for best fitting model
+best.mod1 <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/best_mod_county_prob.rds")
+
 longD <- long_traj(model=best.mod1,data=df)
 x <- weighted_means(model=best.mod1,long_data=longD)
 pred <- pred_means(model=best.mod1)
