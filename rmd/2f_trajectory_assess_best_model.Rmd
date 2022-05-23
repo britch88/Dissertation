@@ -91,7 +91,11 @@ plot(best.mod1)
 summary(best.mod1)
 best.mod.names <- best
 
+```
 
+
+#Saving model results as dataframes with varying levels of additional variables
+```{r}
 best.mod.county.prob <- as.data.frame(summary(best.mod1))
 best.mod.names <- best.mod.county.prob
 rownames(best.mod.names) = test.data$fips_clean
@@ -99,12 +103,55 @@ best.mod.names$fips_clean <- rownames(best.mod.names)
 saveRDS(best.mod.county.prob,"rda/best_mod_county_prob.rds")
 saveRDS(best.mod.names,"rda/best_mod_names.rds")
 
+
+dat.temp1 <- analysis.dat2 %>% ungroup() %>% 
+  select(fips_clean, state, state_abb, country_division, Name) %>%  unique()
+
+#Expected value is 3,141 records, one for each county-level fips code. However, there are some duplicates, resulting in N=3,197. Below we find that these are all instances where the "name" column was missing for one record but non-missing in the other. We select record with non-missing value of name. 
+
+### Checking duplicates
+check.dup <- dat.temp1 %>% 
+  group_by(fips_clean) %>% 
+  mutate(dupe = n()>1) %>% filter(dupe==TRUE)
+
+colSums(!is.na(dat.temp1))
+obs.missing.names <- dat.temp1 %>%  filter(is.na(Name))
+
+### select record with non-missing value of name
+dat.temp2 <- dat.temp1 %>%
+   arrange(fips_clean, state, state_abb, country_division, is.na(Name)) %>% 
+   distinct(fips_clean, state, state_abb, country_division, .keep_all = TRUE)
+
+colSums(!is.na(dat.temp2))
+obs.missing.names2 <- dat.temp2 %>%  filter(is.na(Name))
+
+
+#If we need to keep 'id's that are NA without taking the distinct of those
+
+#df1 %>% 
+#   arrange(id, country, is.na(response)) %>% 
+#   group_by(id, country) %>%
+ #  filter(row_number() == 1 | is.na(id))
+
+
+
+# adding in additional columns
+county.prob.plus.info <- merge(best_mod_names, dat.temp2, by = "fips_clean")
+saveRDS(county.prob.plus.info,"rda/county_prob_plus_info.rds")
+                                                          
+                                                          #'c_young_adult_tot','c_other_adult_tot','c_all_adult_tot','n_other_adults','n_young_adults','n_all_adults','Name','young_adult_rate','other_adult_rate','all_adult_rate','young_to_other_ratio','country_division'
+
 ```
 
 #Sensitivity Tests to Try
 ```{r}
 # remove counties that aren't well classified according to posterior probabilities
 # try with cross validated errors
+# try running 7 group model with 3 degree poly
+# try running 6 group with 4 degree polynomial
+# show 2,3,4, and 5 group models (all with 3 deg polys)
+# limit data to only those counties that have non-missing values
+# limit time period to more recent years
 ```
 
 
