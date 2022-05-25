@@ -40,6 +40,28 @@ traj.results <- readRDS(here::here("rda/county_prob_plus_info.rds"))
 ```
 
 
+# Adding group assignments for trajectory results
+```{r}
+traj.results2 <- traj.results
+traj.results2$Grp1[is.na(traj.results2$Grp1)] <- .001
+traj.results2$Grp2[is.na(traj.results2$Grp2)] <- .001
+traj.results2$Grp3[is.na(traj.results2$Grp3)] <- .001
+traj.results2$Grp4[is.na(traj.results2$Grp4)] <- .001
+traj.results2$Grp5[is.na(traj.results2$Grp5)] <- .001
+traj.results2$Grp6[is.na(traj.results2$Grp6)] <- .001
+
+varlist <- grep('^Grp\\d+', names(traj.results2))
+
+#traj.results2$group <- colnames(traj.results2)[[apply(traj.results2,1,which.max)]
+traj.results2$group <- names(traj.results2)[varlist][max.col(traj.results2[varlist], 'last')*NA^(rowSums(traj.results2[varlist])==0)]
+
+
+#i1 <- grep('^s\\d+', names(df1))
+#names(df1)[i1][max.col(df1[i1], 'last')*NA^(rowSums(df1[i1])==0)]
+
+```
+
+
 # Background info on U.S. Census Bureau County Shapefiles
 ## Source: https://rdrr.io/cran/tigris/man/counties.html
 
@@ -70,11 +92,45 @@ shapefile <- counties()
 ggplot() + geom_sf(data = shapefile, color="black",
                    fill="white", size=0.25)
 
+# Shapefiles contain territories which will not be included in my analyses so removing
+shapefile2 <- filter(shapefile, STATEFP <= "56")
 
+ggplot() + geom_sf(data = filter(shapefile2, STATEFP != "02" & STATEFP != "15"), color="black",
+                   fill="white", size=0.25)
+
+shapefile2$fips_clean <- shapefile2$GEOID
 ```
 
 
+# Merge shapefiles and trajectory results
+```{r}
 
+traj.results2$in.t <- 1
+shapefile2$in.s <- 1
+countydat <- merge(shapefile2, traj.results2, by = "fips_clean", all = TRUE)
+
+table(countydat$in.t, countydat$in.s, useNA = "always")
+
+checkmerge <- filter(countydat, is.na(in.s) |  is.na(in.t))
+
+# 15 non-merges
+### 3 territories so okay
+### 4 without shapefiles
+### 8 counties in shapefile but not in trajectory estimates data
+
+```
+
+# Graph counties by trajectory group
+```{r}
+# assign max posterior probability as group assignment
+
+
+
+ggplot() + geom_sf(data = filter(countydat, STATEFP != "02" & STATEFP != "15"), color="black",
+                    size=0.25, mapping= aes(fill=group))
+
+
+```
 
 
 
