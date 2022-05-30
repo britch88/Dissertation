@@ -1,0 +1,234 @@
+---
+title: "3a_initial_mapping"
+author: "Brit Henderson"
+date: "5/24/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+# packages
+```{r}
+
+library(tidyverse)
+library(Hmisc)
+library(GGally)
+library(cowplot)
+library(reshape2)
+library(tigris)
+library(spdep)
+library(spatialreg)
+library(sf)
+library(rgdal)
+library(spdplyr)
+library(stringr)
+library(gstat)
+
+```
+
+# Source Functions
+```{r}
+knitr::purl("rmd/0a_functions.Rmd")
+source("rmd/0a_functions.R")
+```
+
+# load data
+```{r}
+traj.results <- readRDS(here::here("rda/county_prob_plus_info.rds"))
+
+
+```
+
+
+# Adding group assignments for trajectory results
+```{r}
+traj.results2 <- traj.results
+traj.results2$Grp1[is.na(traj.results2$Grp1)] <- .001
+traj.results2$Grp2[is.na(traj.results2$Grp2)] <- .001
+traj.results2$Grp3[is.na(traj.results2$Grp3)] <- .001
+traj.results2$Grp4[is.na(traj.results2$Grp4)] <- .001
+traj.results2$Grp5[is.na(traj.results2$Grp5)] <- .001
+traj.results2$Grp6[is.na(traj.results2$Grp6)] <- .001
+
+varlist <- grep('^Grp\\d+', names(traj.results2))
+
+#traj.results2$group <- colnames(traj.results2)[[apply(traj.results2,1,which.max)]
+traj.results2$group <- names(traj.results2)[varlist][max.col(traj.results2[varlist], 'last')*NA^(rowSums(traj.results2[varlist])==0)]
+
+
+#i1 <- grep('^s\\d+', names(df1))
+#names(df1)[i1][max.col(df1[i1], 'last')*NA^(rowSums(df1[i1])==0)]
+
+```
+
+
+# Background info on U.S. Census Bureau County Shapefiles
+## Source: https://rdrr.io/cran/tigris/man/counties.html
+
+### Quoted text: Description from the US Census Bureau (see link for source): The primary legal divisions of most states are termed counties. In Louisiana, these divisions are known as parishes. In Alaska, which has no counties, the equivalent entities are the organized boroughs, city and boroughs, municipalities, and census areas; the latter of which are delineated cooperatively for statistical purposes by the state of Alaska and the Census Bureau. In four states (Maryland, Missouri, Nevada, and Virginia), there are one or more incorporated places that are independent of any county organization and thus constitute primary divisions of their states. These incorporated places are known as independent cities and are treated as equivalent entities for purposes of data presentation. The District of Columbia and Guam have no primary divisions, and each area is considered an equivalent entity for purposes of data presentation. All of the counties in Connecticut and Rhode Island and nine counties in Massachusetts were dissolved as functioning governmental entities; however, the Census Bureau continues to present data for these historical entities in order to provide comparable geographic units at the county level of the geographic hierarchy for these states and represents them as nonfunctioning legal entities in data products. The Census Bureau treats the following entities as equivalents of counties for purposes of data presentation: municipios in Puerto Rico, districts and islands in American Samoa, municipalities in the Commonwealth of the Northern Mariana Islands, and islands in the U.S. Virgin Islands. Each county or statistically equivalent entity is assigned a three-character numeric Federal Information Processing Series (FIPS) code based on alphabetical sequence that is unique within state and an eight-digit National Standard feature identifier.
+
+###Usage: counties(state = NULL, cb = FALSE, resolution = "500k", year = NULL, ...)
+### Arguments
+#### state	- The two-digit FIPS code (string) of the state you want, or a vector of codes if you want multiple states. Can also be state name or state abbreviation.
+
+#### cb-	If cb is set to TRUE, download a generalized (1:500k) counties file. Defaults to FALSE (the most detailed TIGER file).
+
+#### resolution-The resolution of the cartographic boundary file (if cb == TRUE). Defaults to '500k'; options include '5m' (1:5 million) and '20m' (1:20 million).
+
+#### year -the data year; defaults to 2020
+
+
+#### arguments to be passed to the underlying 'load_tiger' function, which is not exported. Options include class, which can be set to "sf" (the default) or "sp" to request sf or sp class objects, and refresh, which specifies whether or not to re-download shapefiles (defaults to FALSE).
+
+###See Also: https://www2.census.gov/geo/pdfs/reference/GARM/Ch4GARM.pdf
+
+###Other general area functions: block_groups(), blocks(), county_subdivisions(), places(), pumas(), school_districts(), states(), tracts(), zctas()
+
+# Read in County shapefiles
+```{r}
+
+# Note shapefiles from 2020 used
+shapefile <- counties()
+
+ggplot() + geom_sf(data = shapefile, color="black",
+                   fill="white", size=0.25)
+
+# Shapefiles contain territories which will not be included in my analyses so removing
+shapefile2 <- filter(shapefile, STATEFP <= "56")
+
+ggplot() + geom_sf(data = filter(shapefile2, STATEFP != "02" & STATEFP != "15"), color="black",
+                   fill="white", size=0.25)
+
+shapefile2$fips_clean <- shapefile2$GEOID
+```
+
+
+# Merge shapefiles and trajectory results
+```{r}
+
+traj.results2$in.t <- 1
+shapefile2$in.s <- 1
+countydat <- merge(shapefile2, traj.results2, by = "fips_clean", all = TRUE)
+
+table(countydat$in.t, countydat$in.s, useNA = "always")
+
+checkmerge <- filter(countydat, is.na(in.s) |  is.na(in.t))
+
+# 15 non-merges
+### 3 territories so okay
+### 4 without shapefiles
+### 8 counties in shapefile but not in trajectory estimates data
+
+```
+
+# Graph counties by trajectory group
+```{r}
+# assign max posterior probability as group assignment
+
+
+
+ggplot() + geom_sf(data = filter(countydat, STATEFP != "02" & STATEFP != "15", is.na(group)==0), color="black",
+                    size=0.25, mapping= aes(fill=group))
+
+
+```
+
+# Since its inception, spatiala analysis has been focused on continuous, quantitative measures. When qualitative measures, i.e., those represented by nominal, ordinal, or binary variables were used, it was typically to further support or refine a linear regression estimate. This is especially true in analyses seeking to measure spatial autocorrelation. In response to this  Ruiz, Lopez, and Paez (2010) developed the Q test for spatial independence. They also developed this very handy R package, spqdep to conduct these analyses. Yay! 
+
+
+
+# SEE Ruiz M, Lopez F, Páez A (2010). “Testing for spatial association of qualitative data using symbolic dynamics.” Journal of Geographical Systems, 12(3), 281-309. https://doi.org/10.1007/s10109-009-0100-1.
+
+#Spatial Analyses Set-up
+```{r}
+#Note the spqdep package that we need can only be loaded in R version 4.0.0 while the other packages (such as spdep) we need must be loaded in RStudio 4.1.2. Creates a major headache.
+
+#Make sure we're in version 4.1.2. and spdep package is installed
+## Create a nearest neighbors object, using queen's case for neighborhood contiguity
+sf::sf_use_s2(FALSE)
+#library(s2)
+analysis.dat <- filter(countydat, STATEFP != "02" & STATEFP != "15", is.na(group)==0)
+
+
+# Convert to SpatialPolygonsDataFrame
+analysis.dat2 <- as(analysis.dat,"Spatial")
+
+# Store coordinates
+coords <- coordinates(analysis.dat2)
+
+# Select nearest neighbors based on Queen's case contiguity
+queen <- poly2nb(analysis.dat2)
+
+
+
+# Select nearest neighbors by specifying specific k, k=6
+id <- row.names(as(analysis.dat2, "data.frame"))
+kn6 <- knn2nb(knearneigh(coords, k = 6), row.names = id)
+summary(kn6)
+summary(queen)
+plot(queen, type=1)
+```
+
+
+```{r}
+
+
+
+
+```
+
+
+# Run the analyses
+```{r}
+#Switch to RStudio Version 4.0.0
+
+#install.packages("/data/share/xproject/Training/Practice/henderson/spqdep_0.1.2.zip", type = "source")
+
+library(spqdep)
+
+
+f1 <- ~ group
+jc1 <- jc.test(formula = f1, 
+               data = use.data,
+               distr = "mc",
+               alternative = "greater",
+               zero.policy = TRUE)
+
+
+summary(jc1)
+provinces_spain$Coast <- factor(provinces_spain$Coast)
+levels(provinces_spain$Coast) = c("no","yes")
+f2 <- ~ Male2Female + Coast
+jc2 <- jc.test(formula = f2,
+data = provinces_spain,
+distr = "mc",
+zero.policy = TRUE)
+summary(jc2)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
