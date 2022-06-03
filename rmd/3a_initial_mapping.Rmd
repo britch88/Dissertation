@@ -191,5 +191,6 @@ regions.dfv2 <- analysis.df %>%
 group.proportions <- as.data.frame(table(countydat$group, useNA="no")) %>% 
   mutate(percent = Freq/3141*100)
 
+
 ```
 
