@@ -1,0 +1,96 @@
+---
+title: "3x_testing code"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+#Spatial Analyses Set-up
+```{r}
+#Note the spqdep package that we need can only be loaded in R version 4.0.0 while the other packages (such as spdep) we need must be loaded in RStudio 4.1.2. Creates a major headache.
+
+#Make sure we're in version 4.1.2. and spdep package is installed
+## Create a nearest neighbors object, using queen's case for neighborhood contiguity
+sf::sf_use_s2(FALSE)
+#library(s2)
+analysis.dat <- filter(countydat, STATEFP != "02" & STATEFP != "15", is.na(group)==0)
+
+
+# Convert to SpatialPolygonsDataFrame
+analysis.dat2 <- as(analysis.dat,"Spatial")
+
+# Store coordinates
+coords <- coordinates(analysis.dat2)
+
+# Select nearest neighbors based on Queen's case contiguity
+queen <- poly2nb(analysis.dat2)
+
+
+
+# Select nearest neighbors by specifying specific k, k=6
+id <- row.names(as(analysis.dat2, "data.frame"))
+kn6 <- knn2nb(knearneigh(coords, k = 6), row.names = id)
+summary(kn6)
+summary(queen)
+
+```
+
+
+```{r}
+
+install.packages("spqdep", repos = "https://mran.revolutionanalytics.com/snapshot/2022-03-02")
+
+
+```
+
+
+# Run the analyses
+```{r}
+#Switch to RStudio Version 4.0.0, save workspace first
+
+install.packages("spqdep")
+remove.packages('rlang')
+install.packages('rlang')
+
+library(spqdep)
+
+fx <- 
+f1 <- ~ group
+jc1 <- jc.test(formula = f1, 
+               data = analysis.dat2,
+               distr = "mc",
+               alternative = "greater",
+               zero.policy = TRUE)
+
+
+summary(jc1)
+provinces_spain$Coast <- factor(provinces_spain$Coast)
+levels(provinces_spain$Coast) = c("no","yes")
+f2 <- ~ Male2Female + Coast
+jc2 <- jc.test(formula = f2,
+data = provinces_spain,
+distr = "mc",
+zero.policy = TRUE)
+summary(jc2)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

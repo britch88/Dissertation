@@ -16,7 +16,7 @@ rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 ```
 
 # packages
-```{r}
+```{r include=FALSE, results='hide'}
 
 library(tidyverse)
 library(Hmisc)
@@ -143,92 +143,53 @@ ggplot() + geom_sf(data = filter(countydat, STATEFP != "02" & STATEFP != "15", i
 
 # Since its inception, spatiala analysis has been focused on continuous, quantitative measures. When qualitative measures, i.e., those represented by nominal, ordinal, or binary variables were used, it was typically to further support or refine a linear regression estimate. This is especially true in analyses seeking to measure spatial autocorrelation. In response to this  Ruiz, Lopez, and Paez (2010) developed the Q test for spatial independence. They also developed this very handy R package, spqdep to conduct these analyses. Yay! 
 
+NOTE: The package was a fail; not maintained very well, errors that I cannot debug(). Abandoning ship on this one; but keeping this framing literature here for now.
+
 
 
 # SEE Ruiz M, Lopez F, Páez A (2010). “Testing for spatial association of qualitative data using symbolic dynamics.” Journal of Geographical Systems, 12(3), 281-309. https://doi.org/10.1007/s10109-009-0100-1.
 
-#Spatial Analyses Set-up
-```{r}
-#Note the spqdep package that we need can only be loaded in R version 4.0.0 while the other packages (such as spdep) we need must be loaded in RStudio 4.1.2. Creates a major headache.
-
-#Make sure we're in version 4.1.2. and spdep package is installed
-## Create a nearest neighbors object, using queen's case for neighborhood contiguity
-sf::sf_use_s2(FALSE)
-#library(s2)
-analysis.dat <- filter(countydat, STATEFP != "02" & STATEFP != "15", is.na(group)==0)
+# Qualitatively Checking for Regional and Divisional Clustering based on census definition: https://www2.census.gov/geo/pdfs/maps-data/maps/reference/us_regdiv.pdf 
+Here, for both region and then division, I group the counties and calculate proportion of counties for each our 6 trajectory groups.
+```{r include=FALSE, results='hide'}
+table(countydat$country_division, useNA = "always")
 
 
-# Convert to SpatialPolygonsDataFrame
-analysis.dat2 <- as(analysis.dat,"Spatial")
+analysis.dat <- countydat %>% 
+  mutate(region = ifelse(country_division %in% c("new england","middle atlantic"),"Northeast",
+                          ifelse(country_division %in% c('west south central', 'east south central', 'south atlantic'),"South",
+                                 ifelse(country_division %in% c('west north central', 'east north central'),"Midwest",
+                                        ifelse(country_division %in% c("pacific","mountain"),"West", "other")))))
 
-# Store coordinates
-coords <- coordinates(analysis.dat2)
-
-# Select nearest neighbors based on Queen's case contiguity
-queen <- poly2nb(analysis.dat2)
-
-
-
-# Select nearest neighbors by specifying specific k, k=6
-id <- row.names(as(analysis.dat2, "data.frame"))
-kn6 <- knn2nb(knearneigh(coords, k = 6), row.names = id)
-summary(kn6)
-summary(queen)
-plot(queen, type=1)
-```
+table(analysis.dat$region, analysis.dat$country_division, useNA = "always")
+#NOTE: Consider revisiting handling of NA
 
 
-```{r}
+analysis.df <- as.data.frame(analysis.dat)
+regions.df <- analysis.df %>% 
+  dplyr::select(fips_clean, region, country_division, group) %>% 
+ filter(region != "other" ) %>% 
+  group_by(region) %>% 
+  summarise(Group_1 = sum(group=="Grp1")/n()*100,
+            Group_2 = sum(group=="Grp2")/n()*100,
+            Group_3 = sum(group=="Grp3")/n()*100,
+            Group_4 = sum(group=="Grp4")/n()*100,
+            Group_5 = sum(group=="Grp5")/n()*100,
+            Group_6 = sum(group=="Grp6")/n()*100) 
+
+regions.dfv2 <- analysis.df %>% 
+  dplyr::select(fips_clean, region, country_division, group) %>% 
+ filter(region != "other" ) %>% 
+  group_by(group) %>% 
+  summarise(South = sum(region=="South")/n()*100,
+            West = sum(region=="West")/n()*100,
+            Midwest = sum(region=="Midwest")/n()*100,
+            Northeast = sum(region=="Northeast")/n()*100)
 
 
-
-
-```
-
-
-# Run the analyses
-```{r}
-#Switch to RStudio Version 4.0.0
-
-#install.packages("/data/share/xproject/Training/Practice/henderson/spqdep_0.1.2.zip", type = "source")
-
-library(spqdep)
-
-
-f1 <- ~ group
-jc1 <- jc.test(formula = f1, 
-               data = use.data,
-               distr = "mc",
-               alternative = "greater",
-               zero.policy = TRUE)
-
-
-summary(jc1)
-provinces_spain$Coast <- factor(provinces_spain$Coast)
-levels(provinces_spain$Coast) = c("no","yes")
-f2 <- ~ Male2Female + Coast
-jc2 <- jc.test(formula = f2,
-data = provinces_spain,
-distr = "mc",
-zero.policy = TRUE)
-summary(jc2)
+#Overall Proportions
+group.proportions <- as.data.frame(table(countydat$group, useNA="no")) %>% 
+  mutate(percent = Freq/3141*100)
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
