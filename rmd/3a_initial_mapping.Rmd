@@ -187,10 +187,75 @@ regions.dfv2 <- analysis.df %>%
             Northeast = sum(region=="Northeast")/n()*100)
 
 
+
+#By divisions
+table(analysis.df$country_division, useNA = "always")
+divisions.df <- analysis.df %>% 
+  dplyr::select(fips_clean, region, country_division, group) %>% 
+ filter(is.na(country_division) == 0 & country_division != "possessions") %>% 
+  group_by(country_division) %>% 
+  summarise(Group_1 = sum(group=="Grp1")/n()*100,
+            Group_2 = sum(group=="Grp2")/n()*100,
+            Group_3 = sum(group=="Grp3")/n()*100,
+            Group_4 = sum(group=="Grp4")/n()*100,
+            Group_5 = sum(group=="Grp5")/n()*100,
+            Group_6 = sum(group=="Grp6")/n()*100) 
+
+
+#State-level, oh boy
+table(analysis.df$state, useNA = "always")
+states.df <- analysis.df %>% 
+  dplyr::select(fips_clean, region, country_division, group, state) %>% 
+ filter(is.na(state) == 0 & !(state %in% c("puerto rico", "canal zone", "guam"))) %>% 
+  group_by(state) %>% 
+  summarise(Group_1 = sum(group=="Grp1")/n()*100,
+            Group_2 = sum(group=="Grp2")/n()*100,
+            Group_3 = sum(group=="Grp3")/n()*100,
+            Group_4 = sum(group=="Grp4")/n()*100,
+            Group_5 = sum(group=="Grp5")/n()*100,
+            Group_6 = sum(group=="Grp6")/n()*100) 
+
+
 #Overall Proportions
 group.proportions <- as.data.frame(table(countydat$group, useNA="no")) %>% 
   mutate(percent = Freq/3141*100)
 
+
+```
+
+#Attempt at Correlograms...
+```{r}
+#Region Correlogram
+regions.df2 <- melt(regions.df, id.var = 'region')
+
+ggplot(regions.df2, aes(variable,region)) + 
+  geom_tile(aes(fill = value), color = "white", lwd = 1.5,linetype = 1) + 
+  scale_fill_gradient(low = 'white', high = 'darkred') +
+  geom_text(aes(label = round(value,2)), color = "white", size = 4)
+
+
+# Division Correlogram
+divisions.df2 <- melt(divisions.df, id.var = 'country_division')
+
+ggplot(divisions.df2, aes(variable,country_division)) + 
+  geom_tile(aes(fill = value), color = "white", lwd = 1.5,linetype = 1) + 
+  scale_fill_gradient(low = 'white', high = 'darkred') +
+  geom_text(aes(label = round(value,2)), color = "white", size = 4)
+
+
+# State Correlogram
+states.df2 <- melt(states.df, id.var = 'state')
+
+ggplot(states.df2, aes(variable,state)) + 
+  geom_tile(aes(fill = value), color = "white", lwd = 1.5,linetype = 1) + 
+  scale_fill_gradient(low = 'white', high = 'darkred') +
+  geom_text(aes(label = round(value,2)), color = "white", size = 4)
+
+
+```
+
+#Adding a few maps to zoom in on geographic clustering
+```{r}
 
 ```
 
