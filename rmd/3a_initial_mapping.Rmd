@@ -5,11 +5,7 @@ date: "5/24/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r directories}
+```{r directories, include=FALSE, results='hide'}
 readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 
@@ -31,7 +27,8 @@ library(rgdal)
 library(spdplyr)
 library(stringr)
 library(gstat)
-
+library(elsa)
+library(sp)
 ```
 
 # Source Functions

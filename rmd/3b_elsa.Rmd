@@ -29,8 +29,28 @@ library(rgdal)
 library(spdplyr)
 library(stringr)
 library(gstat)
+library(elsa)
+library(GISTools)
 
 ```
+
+#Save this crucial SpatialPolygonDataFrame - no idea how I created it
+```{r include=FALSE}
+data(tornados)
+writeOGR(obj=torn, dsn="rdadir", layer="tornx", driver="ESRI Shapefile") # this is in geographical projection
+
+writeOGR(obj=torn2, dsn="tempdir", layer="torn2", driver="ESRI Shapefile") # this is in equal area projection
+
+drop <- c("ALAND","AWATER")
+analysis.dat2x = analysis.dat2[,!(names(analysis.dat2) %in% drop)]
+
+writeOGR(obj=analysis.dat2x, dsn="rdadir", layer="maindat", driver="ESRI Shapefile") # this is in geographical projection
+
+writeOGR(obj=torn2, dsn="tempdir", layer="torn2", driver="ESRI Shapefile") # this is in equal area projection
+
+
+```
+
 
 # Source Functions
 ```{r}
@@ -58,16 +78,34 @@ cl <- colorRampPalette(c('darkblue','yellow','red','black'))(100) # specifying a
 plot(elc, col=cl, main='ELSA')
 
 
-cl2 <- colorRampPalette(c('darkblue','white'))(36) # specifying a color scheme
+cl2 <- colorRampPalette(c('darkblue','white'))(12) # specifying a color scheme
 
 
-attempt1 <- elsa(analysis.dat2, d=1000, categorical = T, zcol = 'group')
-attempt2 <- elsa(analysis.dat2, d=100, categorical = T, zcol = 'group')
-attempt3 <- elsa(analysis.dat2, d=10, categorical = T, zcol = 'group')
+#Okay, the above is a fail - going to try rasterizing the data
+load("/data/share/xproject/Training/Practice/henderson/Dissertation/ws220603.RData")
+rm(analysis.df,analysis.dat,analysis.df2,checkmerge,coords,countydat,divisions.df, divisions.df2, group.proportions,kn6,
+   queen, regions.df, regions.df2, regions.dfv2, shapefile, shapefile2,states.df, states.df2, traj.results,traj.results2,use.data,
+   wrld_simpl, f1, id, nbdata, long_traj,occ,pred_means, pred_means_Nt,weighted_means)
 
-plot(attempt1, main='ELSA', col = cl2 )
-plot(attempt2, main='ELSA', col = cl2 )
-plot(attempt3, main='ELSA', col = cl2 )
+
+r <- raster(ncol=180, nrow=180)
+extent(r) <- extent(analysis.dat2)
+analysis.dat2$group2 <- as.factor(analysis.dat2$group)
+
+drop <- c("ALAND","AWATER","state","Grp1","Grp2","Grp3","Grp4","Grp5","Grp6","Name","LSAD","CLASSFP","MTFCC","CSAFP","CBSAFP","METDIVFP","in.s","in.t","STATEFP","COUNTYFP","COUNTYNS","fips_clean", "country_division")
+#analysis.dat2x = analysis.dat2[,!(names(analysis.dat2) %in% drop)]
+analysis.dat3 = analysis.dat2[,!(names(analysis.dat2) %in% drop)]
+rm(analysis.dat2)
+
+rp <- rasterize(analysis.dat3, r, 'group2')
+plot(rp)
+
+
+#start here
+load("/data/share/xproject/Training/Practice/henderson/Dissertation/ws220610_elsa.RData")
+attempt5 <- elsa(rp, d=2000,categorical = T)
+cl <- colorRampPalette(c('darkblue','yellow','red','black'))(100) # specifying a color scheme
+plot(elc, col=cl, main='ELSA')
 
 
 ```

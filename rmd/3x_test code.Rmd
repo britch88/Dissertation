@@ -79,7 +79,44 @@ summary(jc2)
 
 
 
+# More failures with ELSA package
+```{r}
+#creating neighbor object
+neighbors <- dneigh(analysis.dat2,0,100,longlat=TRUE,method = 'bound')
+analysis.dat2$group2 <- as.factor(analysis.dat2$group)
+#analysis.dat2$group3 <- as.numeric(analysis.dat2$group)
 
+# Convert to SpatialPolygonsDataFrame
+
+sf::sf_use_s2(FALSE)
+library(s2)
+shapefile3 <- as(shapefile2,"Spatial")
+
+traj.results2$in.t <- 1
+shapefile3$in.s <- 1
+countydat <- merge(shapefile3, traj.results2, by = "fips_clean", all = TRUE)
+
+table(countydat$in.t, countydat$in.s, useNA = "always")
+
+analysis.dat <- countydat %>% 
+  mutate(region = ifelse(country_division %in% c("new england","middle atlantic"),"Northeast",
+                          ifelse(country_division %in% c('west south central', 'east south central', 'south atlantic'),"South",
+                                 ifelse(country_division %in% c('west north central', 'east north central'),"Midwest",
+                                        ifelse(country_division %in% c("pacific","mountain"),"West", "other")))))
+
+
+attempt1 <- elsa(analysis.dat2, d=150000, categorical = T, zcol = 'group2', method = 'bound')
+attempt2 <- elsa(analysis.dat2, d=100, categorical = T, zcol = 'group')
+attempt3 <- elsa(analysis.dat2, d=100000, categorical = F, zcol = 'AWATER')
+attempt4 <- elsa(analysis.dat2, d=100000, categorical = F, zcol = 'ALAND')
+
+
+#plot(attempt1, main='ELSA', col = cl2 )
+#plot(attempt2, main='ELSA', col = cl2 )
+plot(attempt3, main='ELSA', col = cl )
+plot(attempt4, main='ELSA', col = cl )
+
+```
 
 
 
