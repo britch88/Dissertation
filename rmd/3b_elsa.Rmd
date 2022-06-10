@@ -1,0 +1,74 @@
+---
+title: "3b_elsa"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+# packages
+```{r include=FALSE, results='hide'}
+
+library(tidyverse)
+library(Hmisc)
+library(GGally)
+library(cowplot)
+library(reshape2)
+library(tigris)
+library(spdep)
+library(spatialreg)
+library(sf)
+library(rgdal)
+library(spdplyr)
+library(stringr)
+library(gstat)
+
+```
+
+# Source Functions
+```{r}
+knitr::purl("rmd/0a_functions.Rmd")
+source("rmd/0a_functions.R")
+```
+
+#Overview of ELSA
+## from https://cran.r-project.org/web/packages/elsa/vignettes/elsa.html
+ELSA (entropy-based local indicator of spatial association) is a novel spatial statistic to measure local spatial autocorrelation in both categorical and continuous spatial data. ELSA quantifies the degree of spatial association of a variable at each location relative to its neighbouring locations. This indicator simultaneously incorporates both spatial and attribute aspects of spatial association into account for both categorical and continuous data. The values of ELSA vary between 0 and 1, which denote highest and lowest spatial association, respectively.
+
+In addition, entrogram is also developed based on ELSA that is a novel approach for exploring the global spatial structure within the entire area (like a variogram). The entrogram uses ELSA to characterize the spatial association and can be used for both continuous and binary or multi-class categorical data.
+
+To find out more details about these new methods, look at the following paper published in the journal of Spatial Statistics:
+
+Naimi, B., Hamm, N. A., Groen, T. A., Skidmore, A. K., Toxopeus, A. G., & Alibakhshi, S. (2019). ELSA: Entropy-based local indicator of spatial association. Spatial statistics, 29, 66-88.
+
+```{r}
+#Practice
+file <- system.file('external/lc_example.grd',package='elsa') 
+lc <- raster(file)
+plot(lc,main='Land cover: a categorical map')
+elc <- elsa(lc, d=2000,categorical = T)
+cl <- colorRampPalette(c('darkblue','yellow','red','black'))(100) # specifying a color scheme
+plot(elc, col=cl, main='ELSA')
+
+
+cl2 <- colorRampPalette(c('darkblue','white'))(36) # specifying a color scheme
+
+
+attempt1 <- elsa(analysis.dat2, d=1000, categorical = T, zcol = 'group')
+attempt2 <- elsa(analysis.dat2, d=100, categorical = T, zcol = 'group')
+attempt3 <- elsa(analysis.dat2, d=10, categorical = T, zcol = 'group')
+
+plot(attempt1, main='ELSA', col = cl2 )
+plot(attempt2, main='ELSA', col = cl2 )
+plot(attempt3, main='ELSA', col = cl2 )
+
+
+```
+
