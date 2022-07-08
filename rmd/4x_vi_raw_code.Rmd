@@ -1,0 +1,709 @@
+---
+title: "Variable Importance Analysis"
+author: "Brit Henderson"
+date: "July 2022"
+output:
+  html_document:
+    code_folding: show
+    df_print: paged
+    fig_caption: yes
+    fig_height: 8
+    fig_width: 10
+    highlight: monochrome
+    theme: spacelab
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
+  github_document:
+    df_print: paged
+    fig_caption: yes
+    fig_height: 8
+    fig_width: 10
+    toc: yes
+---
+
+# Setup
+
+## Data path
+
+In the `dataPath` code chunk below, specify the data set you will use for variable importance.
+Please note that as mentioned in the attached `Notes_on_VI_for_VA_0222.docx`, the data set
+would compose of 3 types of variables.
+
+* **Y** - a binary outcome (e.g., the sum of all the case’s wages during the four follow-up quarters ≥ $14.5K).
+* **A** - target predictors for which we want to estimate their relative importance to
+the outcome compared to other predictors (e.g., ABCD skills training).
+These predictors can be either continuous or binary.
+If categorical variables are of interest, they should be converted to binary dummy variables.
+* **X** - all predictors which act as controls for the relationship between **Y** and **A**,
+including both the predictors in set **A** and additional predictors for which
+we are not interested in conducting variable importance.
+
+In the code chunk below, you are specifying the data set to carry out the variable
+importance estimation for a **single binary** outcome. 
+The sample frame may be **different** from
+the sample frame that you have for predictive analytics (if you have used MDRC/CDI's tool
+for predictive analytics prior to running this template).
+(More details are provided for caution in the interpretation section)
+
+```{r dataPath, messsage = FALSE, warning = FALSE}
+#-------------------------#
+datapath <- "data-r-objects/inputs"    # Insert folder storing the data object
+#-------------------------#
+#-------------------------#
+datasetname <- "student_train.Rda" # Insert the name of the data object
+#-------------------------#
+```
+
+We set up the environment with the needed packages
+(all listed in the "packages.R" script) and scripts
+to run variable importance estimation with nonparametric
+bootstrap sampling in the background.
+
+```{r PackageLoading, message= FALSE, warning= FALSE}
+source(here::here("R", "packages.R"))
+source(here::here("R", "variable_importance.R"))
+source(here::here("R", "helpers.R"))
+source(here::here("R", "learner_training.R"))
+```
+
+Finally, we load the data set.
+
+```{r LoadingData, message = FALSE, warning = FALSE}
+# load the data set
+dat <- get(base::load(here::here(datapath,datasetname)))
+```
+
+# Introduction
+
+## Research question
+
+Research question: What factors predict success among TANF leavers after one year of exit? 
+To further specify this question, you might ask, for each factor of interest 
+(e.g. a program assignment): To what extent is this factor associated with a change in the 
+likelihood of success (measured by a particular outcome of interest), after controlling for 
+other factors? 
+This question moves beyond “what” and quantifies – asks “by how much.” 
+In other words, what is the “importance” of the factor? 
+This same question can be asked for each factor of interest.
+If all the factors are measured on the same scale and for the same 
+sample (TANF leavers in CY 2019 who were younger than 60 years old), 
+then the results, their estimates of importance, can be compared. 
+
+## Target parameter
+
+Next, we can map this question to a target parameter – 
+a quantity that we want to estimate to answer the question.
+To do this, first we have to introduce a little notation: 
+
+Let $Y=1$ if a case’s outcome of interest is realized 
+(e.g., the sum of all the case’s wages during the four follow-up quarters ≥ $14.5K) 
+and $Y=0$ otherwise. 
+Let $A=1$ if the case is given an assignment of interest (e.g., skills training), 
+and $A=0$ otherwise. 
+For simplicity, we are assuming our factor of interest is binary,
+but we also allow for continuous factors.
+Let X be all other factors of interest and other measures to control 
+for--all other possible assignments and case characteristics. 
+Then an intuitive **target parameter** is: 
+
+$$E_X [P(Y=1│A=1,X)-P(Y=1│A=0,X)]$$
+
+which is the mean difference between the likelihood of success when assigned to $A$ 
+and when not assigned to $A$, controlling for all other measured factors 
+(other assignments and other measures). 
+This parameter can be specified for each factor of interest that you would like to 
+include in the comparison (e.g. all possible assignments). 
+That is, each factor of interest for comparison takes a turn as $A$. 
+Each *target predictor* will have its own *target parameter* which we will estimate.
+
+We have not been specific about the details for measuring assignments. 
+That is, it will be important to consider whether you are interested in whether 
+someone has been recommended to an assignment vs. started an assignment 
+vs. completed an assignment. 
+
+## Selecting predictors
+
+When selecting which predictors will be included, we should take care
+with predictors that are highly correlated with each other.
+For example, consider an exam with separate reading and math sections.
+Students receive a composite reading score and a composite math score.
+In addition, they receive 5 subscores for each category.
+These subscores will most likely be highly correlated with each other.
+
+If we include all 5 subscores in the learner, the overall importance
+of the reading component of the exam will be split over these 5 subscores.
+For example, if the composite reading score is the target predictor
+for which we estimate variable importance, and the subscores are included
+as control predictors, most likely the composite score will look
+like it has very low variable importance.
+The influence of the composite score will have been masked by the 
+reading subscores.
+Variable importance estimation will have difficulty
+attributing how to distribute influence over the correlated predictors.
+Estimates for highly correlated predictors will also be unstable;
+for example, removing a small number of students from the sample could 
+result in substantially different variable importance estimates.
+Thus, our bootstrap approach for estimating uncertainty, outlined below,
+will have very unstable estimates and thus very wide confidence intervals.
+
+Instead of including a set of highly correlated predictors,
+it is best practice to select a single predictor out of the set.
+Rather than including all 5 reading subscores, we would only include
+the single composite reading score in order to more accurately
+estimate the importance of the reading component of the exam.
+
+## Estimation
+
+There are many options for estimating this target parameter. 
+Here is a general strategy. We can share code that implements this. 
+
+1. Fit a model in which $Y$ is your dependent variable, while $A$ and all the measures 
+in $X$ are your independent variables. 
+For example, you could fit a logistic regression of $Y$ on $A$ and $X$.
+You could also use ML to model $Y$ on $A$ and $X$. 
+Logistic regression will be the most straightforward, but we may want to consider if
+other algorithms that consider interactions may also be useful.
+2. Set all $A$ to $1$ for all observations in the data and get the predicted probabilities 
+from the regression fit in Step 1. Repeat by setting $A$ to $0$ for all observations. 
+Therefore, you will have two predicted probabilities for each case.
+3. For each case, subtract the predicted probability for when $A=0$ from the predicted probability 
+for when $A=1$ and then take the mean of these differences across all recipients. 
+This value is your estimate of the target parameter.
+
+## Intervals
+
+Next, you’ll want to estimate the standard error and 95% CI for the estimator 
+so you can understand how precise your estimates are and whether they are 
+statistically different from zero. 
+Here, we will rely on a nonparametric bootstrap, as follows:
+
+1.	Sample the rows of the data, with replacement. This is a single bootstrap sample.
+2.	With this bootstrap sample, repeat the 3 estimation steps to get an estimate of 
+the target parameter with the bootstrap sample. Save this estimate.
+3.	Repeat steps 1 and 2 100 times. So you will have a vector of 100
+estimates of the target parameter.
+4.	The 95% confidence interval is the 2.5th and 97.5th percentile values of 
+these 100 estimates. The standard error is the standard deviation of the 100 estimates.
+
+# Learner specification
+
+Below, we will be specifying our "learner" for variable estimation.
+Similar to specifications in predictive modeling, 
+a learner here encompasses all the components needed to run variable estimation 
+with some additions as below - 
+
+* the full predictor set/independent variables (**X**)
+* the outcome (**Y**)
+* a modeling approach (regression or machine learning)
+* a **fixed** corresponding tuning parameter for the modeling approach
+* the target factor set (**A**) will be specified in a separate step below.
+
+_Naming Convention to Observe_ : If the user has more than one predictor set to specify,
+we expect the user to name and number the predictor set as predset_x(Insert Number)
+as predset_x01, predset_x02, etc.
+Please note that all predictors in the target set (**A**) should be included in the
+full predictor set **X**.
+
+```{r LearnerSpecs, message = FALSE, warning = FALSE}
+#-------------------------#
+# Insert both X and A predictors
+predset_x01 <- c("gender_SS", "race_SS", "prev_GPA_SS", 
+                 "num_classes_SS","fam_income_SS", "athlete_SS", 
+                 "advanced_SS", "absences_MS","cur_GPA_MS")      
+# User should insert more if they have more predictor sets
+allPredsets <- list(
+  predset_x01 = predset_x01 
+)
+# Insert name of outcome
+outcomeName <- c("graduate") 
+# Insert modeling approaches for each of the predictor sets
+specifiedLearners <-
+  list(
+    predset_x01 = c("glm", "random_forest") 
+  )
+#-------------------------#
+```
+
+For tuning parameters, we have set **fixed** defaults.
+As we are not optimizing for a "best" model by an evaluation metrics
+such as AUC_ROC as in predictive modeling, we do not need to run the models
+through several different tuning parameters. The user does not need to interact
+with the code chunk below.
+
+```{r defaultTuningSpecs, message = FALSE, warning = FALSE}
+# for glm 
+tune_glm <- data.frame(
+  penalty = NULL
+)
+# for lasso 
+# lambda (termed penalty here) is the amount of regularization,
+# mixture (same as alpha) = 1 means lasso here defines the type of regularization
+# mixture (alpha) = 0 means ridge regression
+tune_lasso <- expand.grid(
+  penalty = 0.1,
+  mixture = 1
+) 
+tune_random_forest <- data.frame(
+    m_tries_opt = 3,
+    ntrees_opt = 20,
+    max_depth_opt = 5
+)
+tune_xgboost <- data.frame(
+    tree_depth = 5,
+    trees = 5,
+    learn_rate = 0.2
+)
+tune_naive_bayes <- data.frame(
+    smoothness = 0.5,
+    Laplace = "NULL"
+)
+tune_svm_poly <- data.frame(cost = 10, 
+                            degree = 2, 
+                            scale_factor = .5, 
+                            margin = .15)
+tune_svm_rbf <- data.frame(
+    cost = 10, 
+    rbf_sigma = 1, 
+    margin = .05
+)
+```
+
+In the code chunk below, we save the learner names and specifications.
+
+```{r learnerSpec, warning = FALSE, message = FALSE}
+learnerNames <- NULL
+counter <- 1
+for (i in 1:length(allPredsets))
+{
+    predsetName <- names(allPredsets)[i]
+    algorithmList <- unlist(specifiedLearners[predsetName])
+    for (j in 1:length(algorithmList)){
+        ML <- algorithmList[[j]]
+        learnerName <- paste(ML, predsetName, 1, sep = "_")
+        learnerNames[counter] <- learnerName
+        counter <- counter + 1
+    }
+}
+learnerSpec <- list(
+          datapath = datapath, 
+          trainingDataName = datasetname,
+          outcomeName = outcomeName,
+          allPredsets = allPredsets,
+          specifiedLearners = specifiedLearners,
+          learnerNames = learnerNames,
+          tuningSets = list( # add additional algorithms here if more added above
+            glm = tune_glm,
+            random_forest = tune_random_forest,
+            lasso = tune_lasso,
+            naive_bayes = tune_naive_bayes,
+            xgboost = tune_xgboost,
+            svm_poly = tune_svm_poly,
+            svm_rbf = tune_svm_rbf
+          )
+)
+```
+
+In the variable estimation section below, you will be asked to supply
+a single `learnerName` at a time to run the estimation.
+A `learnerName` is a combination of the machine learning algorithm name,
+the predictor set and a **fixed** default tuning parameter of "1", 
+all written in a single string separated by "_".
+The available learners based on your above specification are printed below.
+
+```{r specifiedLearners, warning = FALSE, message = FALSE}
+print(learnerNames)
+```
+
+# Data checking
+
+## Missigness Check
+
+Before jumping to variable importance estimation, we have to check for any missingness
+in the data set in all **A**, **X** and **Y** variables. If we are unaware of missingness in our data set, 
+we may actually be estimating the parameters of our target parameters on a subset of the sample as 
+the model algorithm will delete the entire observation from the data set if any variables is missing. 
+Hence, we run the risk of estimating **biased** estimates on a completely not missing subset of 
+the entire data set.
+
+Our first check is relatively straightforward.
+We can use the `summary()` function to see NAs counts for each of the column/variable
+of the data set as below.
+
+In our example, there are missing values in the independent variable __fam_income_SS__
+and our outcome variable __graduate__.
+
+```{r}
+summary(dat)
+```
+We further check the missingness by data type and where in the observations this occur.
+
+```{r}
+visdat::vis_dat(dat)
+```
+We can check the distribution of missingness compared to non-missingness values by
+each variable as well. As in the graph and table below, 
+__fam_income_SS__ is missing by ~5% while the outcome __graduate__ is missing by ~3%.
+
+```{r}
+# vusalize missingness percentages
+visdat::vis_miss(dat)
+```
+
+```{r}
+# Estimating missingness by percentage in tabular format
+100 * (apply(apply(dat, 2, is.na), 2, sum)/nrow(dat))
+```
+
+If we were to omit all the missing observations from the data and retain the observations
+with no missing values on each of the variables, we would retain **~92%** of the original
+data set. Whether we should omit all the missing observations from the data set or impute
+using the appropriate imputation scheme would depend on what type of missingness we are facing.
+Explorations on the type of different missingness and associated imputation scheme
+will be added in subsequent versions as needed.
+
+```{r}
+dat_na_rm <- na.omit(dat)
+100 * (nrow(dat_na_rm)/nrow(dat))
+```
+
+For demonstration purposes, we omit all the missing observations from the data.
+
+```{r}
+dat <- na.omit(dat)
+```
+
+## Separation
+
+Complete separation is when an independent variable or variables perfectly predicts
+the outcome variable. 
+A simple and obvious example would be when everyone **above**
+a certain age XXX achieves outcome state 1 (of binary outcome 1/0) and everyone **below** 
+a certain age XXX achieves outcome state 0.
+Quasi-complete separation is when an independent variable almost perfectly predicts
+the outcome variable.
+Separation can result in poor model performance and unstable estimates,
+such as model coefficients being unreasonably large or having very large standard errors.
+
+In the code chunk, we ask you to specify, the outcome variable,
+the continuous variables and the factor variables in your data set.
+
+We will be estimating the mean (for continuous variables) and proportion (for factor
+variables) across the outcome variable for all the independent variables.
+If we detect a substantive difference in mean or proportions of the independent variables
+across the outcome variable's binary states, there may be a case for perfect separation going on.
+
+```{r}
+#-----------------------------------#
+outcome_variable <- "graduate" # Insert outcome variable
+continuous_variables <- c("prev_GPA_SS", "fam_income_SS",
+  "prev_GPA_SS", "cur_GPA_MS",
+  "num_classes_SS","absences_MS") # Insert continuous variable
+factor_variables <- c("gender_SS", "race_SS",
+                      "athlete_SS","advanced_SS") # Insert factor variable
+#-----------------------------------#
+```
+
+```{r, warning = FALSE}
+avg_tab <-
+  dat %>%
+    dplyr::group_by_(as.symbol(outcome_variable)) %>%
+    dplyr::summarize_at(vars(continuous_variables), ~round(mean(.),3), na.rm = TRUE)
+avg_tab <-
+  datatable(avg_tab,
+    class = "cell-border stripe",
+    rownames = FALSE,
+    extensions = "FixedColumns",
+    options = list(
+      dom = 't',
+      scrollX = TRUE,
+      fixedColumns = TRUE
+  ))
+avg_tab
+```
+
+```{r}
+prop_table <- NULL
+for(i in 1:length(factor_variables)){
+  prop_table[[i]] <-
+    dat %>%
+      dplyr::group_by_(as.symbol(outcome_variable), as.symbol(factor_variables[i])) %>%
+      tally() %>%
+      dplyr::mutate(freq = round(100 * (n/sum(n)),3))
+}
+```
+
+```{r}
+htmltools::tagList(
+  lapply(prop_table, datatable, class = "cell-border stripe", rownames = FALSE, width = 400)
+)
+```
+
+# Variable importance estimation
+
+## Target predictor specification
+
+In the code chunk below, we will be specify the target predictors (**A**),
+and the values we want to compare for each of these predictors,
+for a particular learner.
+
+In the `varInfo` tibble, you are expected to fill additional info about the 
+target predictors you have specified for each corresponding predictor set
+as `targetset_a(ParticularNumber)` in the above section.
+`varHighVal` and `varLowVal` columns in `varInfo` tibble refers to
+the two states that we can set our target predictors and estimate the
+difference in outcome probability.
+
+For instance, for binary variables like __gender_SS__ or being assigned
+or completed a __ABCDTrainingProgram__,  we would put `varHighVal = 1` and
+`varLowVal = 0`.
+The interpretation of the estimated value would be:
+"Observations who were assigned __ABCDTrainingProgram__ are on average
+XX% times more or less likely to complete _your specified outcome_ compared to 
+observations who were not assigned to __ABCDTrainingProgram__
+from your sample frame."
+
+For continuous variables like previous GPA, we can specify a `varHighVal` and
+`varLowVal` such as  `varHighVal = 4.5` and `varLowVal = 4.0`.
+The interpretation of the estimated value would be:
+"Students who had a previous year GPA of **4.5** on average are XX% times
+more or less likely to complete _your specified outcome_ than students who had
+**4.0** on the previous year's GPA from your sample frame."
+
+We can also consider the same target predictor across multiple high and
+low values.
+For example, we could ask the difference between a 4.5 and 4.0 GPA,
+and the difference between a 2.5 and 3.5 GPA.
+
+One way to choose high and low values for continuous variables is 
+if there is a subject-matter driven threshold, such as students
+above a certain GPA being considered high-performing students,
+while students below a certain GPA being considered low-performing students.
+Alternatively, we can choose high and low values that are 1 standard
+deviation apart (or 2 or 3 standard deviations apart for testing
+more extreme values in the population).
+If the high and low values are too close together, the learner
+may not be able to distinguish between them well, and the predictor
+may have a low variable importance estimate even if the overall
+influence of the predictor is strong.
+
+The code chunk specifies variable importance for one learner at a time.
+We show two learners as an example; to look across more learners,
+duplicate the code chunk below.
+
+The default number of bootstrap draws is 1000.
+For faster, but less precise estimates, decrease this number.
+For slower, but more precise estimates, decrease this number.
+**Note**: the variable estimation procedure is computationally intensive, so it can take
+several minutes to run.
+In our example code, 1000 bootstrap iterations across 3 variables takes 3 minutes.
+
+The stratVar variable specifies whether the bootstrap sample
+should be stratified across a particular categorical predictor.
+Stratification ensures that each category is properly represented.
+If there are rare categories that are important, not stratifying
+could mean that certain bootstrap samples exclude that category entirely,
+leading to high-variance results.
+Failing to stratify can result in higher-variance estimates.
+However, we only recommend stratifying across variables that are of
+particular importance.
+
+
+```{r viBootSpec1}
+#-------------------------#
+learnerName <- "glm_predset_x01_1" # Insert Learner Name
+varInfo <- tibble(
+  # Insert target predictors for variable importance analysis
+  varSelect = c("gender_SS", "prev_GPA_SS", "prev_GPA_SS"), 
+  # Note that your varLowVal and varHighVal specifications have to match correspondingly
+  # in index position in vector here with the target predictors you specified in varSelect.
+  varLowVal = c(0, 4.0, 2.5), 
+  varHighVal = c(1, 4.5, 3.5) 
+)
+bootDraws <- 1000
+stratVar <- NULL
+#-------------------------#
+```
+
+Below, we print the `varInfo` tibble to check that the specification is right.
+
+```{r printInfo1}
+print(varInfo)
+```
+
+## Estimation
+
+```{r viBoot1, cache = TRUE}
+vi_est <- get_all_vi_ests(
+  dat = dat,
+  learnerName = learnerName,
+  learnerSpec = learnerSpec,
+  varInfo = varInfo,
+  stratVar = stratVar,
+  bootDraws = bootDraws,
+  parallel = TRUE
+)
+```
+
+The table below shows raw estimates of the predictor probability differences
+between the two states for each of the target predictors.
+The statistically significant estimates are 
+where the confidence interval of the estimate does not have 0 within its range.
+
+```{r viSummary1}
+vi_est_summary <- vi_est %>% 
+  dplyr::group_by(predictor, lowValue, highValue) %>%
+  dplyr::summarise(estimate = mean(est, na.rm = TRUE), 
+                   se = sd(est, na.rm = TRUE), 
+                   ci_low = quantile(est, .025, na.rm = TRUE), 
+                   ci_high = quantile(est, .975, na.rm = TRUE)) %>%
+  dplyr::mutate(
+    outcome = learnerSpec$outcomeName) %>%
+  dplyr::mutate(significant = 
+    factor(if_else((ci_low < 0 & ci_high < 0) | (ci_low > 0 & ci_high > 0),
+           "Yes", "No"), levels = c("Yes", "No"))) 
+head(vi_est_summary)
+```
+
+```{r viPercentSummary1}
+vi_percent_est_summary <- vi_est_summary %>% 
+  mutate(estimate_percent = round(100 * estimate, 2),
+         ci_low_percent = round(100 * ci_low, 2),
+         ci_high_percent = round(100 * ci_high, 2)) %>%
+  mutate(predictor_levels = paste(predictor, lowValue, highValue, sep = "_")) %>%
+  select(predictor_levels, predictor, lowValue, highValue,
+         estimate_percent, ci_low_percent, ci_high_percent,
+         outcome, significant)
+head(vi_percent_est_summary)
+```
+
+The graph below ranks the relative importance of each target predictor to the outcome.
+Those predictors with green highlighted confidence intervals are those with statistically
+significant differences.
+For instance, out of our sample students, those with a previous GPA of 3.5 has an approximately
+3% higher chance of graduating than those with a previous GPA of 2.5
+
+```{r}
+outcome <- unique(vi_percent_est_summary$outcome)
+predictorLabels <- paste0(
+  vi_percent_est_summary$predictor, "\n",
+  vi_percent_est_summary$lowValue, " to ",
+  vi_percent_est_summary$highValue
+)
+# Plot variable importance 
+ggplot2::ggplot(vi_percent_est_summary,
+  aes(x = factor(predictor_levels),
+      y = estimate_percent, color = significant)
+  ) +
+  ggplot2::geom_segment(
+    aes(xend = predictor_levels, yend = ci_high_percent), size = 1
+  ) +
+  ggplot2::geom_segment(
+    aes(xend = predictor_levels, yend = ci_low_percent), size = 1
+  ) +
+  ggplot2::geom_point(size = 3) +
+  ggplot2::geom_text(
+    aes(label = paste0(round(estimate_percent), "%"), vjust = -.7), size = 4
+  ) +
+  ggplot2::coord_flip() +
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.title = element_blank(), legend.position = "none",
+                 text = element_text(size = 12)) +
+  scale_color_manual(values = c("Yes" = "forestgreen", "No" = "darkgrey")) +
+  scale_x_discrete(labels = predictorLabels) +
+  xlab("") +
+  ylab("Estimate") +
+  ggtitle(
+    paste("Variable Importance of Predictors for \nOutcome:", outcome)) +
+  theme (plot.title = element_text(size = 12,
+                                   face = "bold",
+                                   vjust = 1,
+                                   hjust = 0.5))
+```
+
+# Interpretation
+
+## Assocation, NOT causation
+
+We cannot infer **any causation** from our variable importance estimates.
+For instance, if we see a 10% increase in chances of success with respect
+to your outcome if your program participants were assigned training ABCD, we __cannot__
+conclude that training ABCD __causes__ that 10% increase.
+Instead, we can only conclude that there is an __observed association__ between
+participating in the training program and a higher chance of success.
+
+The reason we cannot make a causal conclusion is because the assignment of
+participants to the program was not random.
+Consider the setting above, where we see an observed positive association
+between the training program and downstream success.
+Maybe participants who were already more motivated or had
+more background self-selected to participate in training program ABCD.
+Maybe a case manager guided people into training program ABCD based
+on their background or characteristics.
+In both of these scenarios, we would see an association between participation
+in the training program and success.
+However, maybe those participants would have succeeded regardless of 
+whether or not they participated in the training program, so
+we cannot attribute their success to the training program.
+
+In order to truly assess causation, we would have to conduct a randomized experiment.
+We could randomly assign half of participants to training program ABCD and 
+half to a control condition, such as no training program.
+We could then compare the difference in outcomes between the two groups
+and estimate the effect of the training program on success.
+If a random experiment is not possible, there are a variety of 
+pseudo-experimental methods one could use to still attempt to assess causality.
+For example, one method involves matching individuals with 
+similar characteristics who were given the training ABCD and those who were not.
+Then, we can estimate the differences in chances of success between these two
+groups of people and tease out how effective the training program ABCD is.
+However, pseudo-experimental methods are not applicable in every context,
+and require great care to perform.
+
+In conclusion, our variable importance estimates cannot be used to
+make causal conclusions, but instead only tell us about observed
+associations.
+
+## Difference from predictive analytics
+
+Predictive analytics is estimating the probability of success
+for individuals using data collected at a certain time point. 
+In VA's TANF program case, the predictive analytics sample is 
+set at the point of entry into the service program.
+In estimating different probabilities of success, 
+we may be able to tailor services
+to certain individuals who may need more support to 
+succeed at the onset of the program.
+
+The current variable importance estimation for VA is not
+looking at the same sample frame as the one for predictive analytics.
+Rather, we are focused on a later time frame,
+when individuals are given at least one assignment (or training).
+Therefore, our current research question of what factors have XXX amount 
+of association with the outcome only is relevant for individuals who 
+have stayed on long enough in the TANF program 
+to receive at least one assignment or training.
+
+If we were instead to use the same sample frame as in 
+the predictive analytics case, we would be including individuals 
+who already left the TANF program due to early realization of successful outcomes. 
+These individuals who leave early are likely to be fundamentally
+different from those who stay longer.
+Thus, if we were to include these early success cases in our variable 
+importance analysis, our estimates of the different program
+factors would then be inaccurate for those participants who we are actually interested
+in, those who stay longer in the TANF program.
+
+## What can variable importance estimates tell us?
+
+Take the example of the variable importance estimate for participating in 
+ABCD training program.
+The estimate tells us that those individuals who received ABCD training
+have a certain higher/lower probability
+of success compared to those who received XYZ training (controlling
+for all other predictors).
+Again, we cannot conclude that ABCD training or XYZ training 
+**causes** different levels of success.
+The variable importance analysis can prompt further investigation into
+program options to understand why people in different training programs
+have differential success rates.
