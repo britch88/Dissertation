@@ -9,22 +9,56 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Open Intro County Complete Data Set
+Source:https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/  
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Then: https://www.openintro.org/data/?data=county_complete
+The data prior to 2011 was from http://census.gov, though the exact page it came from is no longer available.
 
-```{r cars}
-summary(cars)
+More recent data comes from the following sources.
+
+*Downloaded via the tidycensus R package.
+*Download links for spreadsheets were found on https://www.ers.usda.gov/data-products/county-level-data-sets/download-data
+*Unemployment - Bureau of Labor Statistics - LAUS data - https://www.bls.gov/lau/.
+*Median Household Income - Census Bureau - Small Area Income and Poverty Estimates (SAIPE) data.
+*The original data table was prepared by USDA, Economic Research Service.
+*Census Bureau.
+*2012-16 American Community Survey 5-yr average.
+*The original data table was prepared by USDA, Economic Research Service.
+*Tim Parker (tparker at ers.usda.gov) is the contact for much of the new data incorporated into this data set.
+```{r}
+library(tidyverse)
+#Read in data and pick 6 to 10 factors
+dat <- read_csv(here::here("raw/CountyPredictors", "county_complete.csv"))
+dat2 <- dat %>% 
+  select(fips, state, name, pop2017, some_college_2017, hs_grad_2017, broadband_2017, median_household_income_2017, poverty_2017, unemployment_rate_2017   ) %>% 
+  mutate(fips_clean = as.character(sprintf("%05d", fips)))
+
 ```
 
-## Including Plots
+# County Business Patterns Data: 2019
+https://www.census.gov/data/datasets/2019/econ/cbp/2019-cbp.html
+Reading in data and selecting naics codes corresponding to commercial banks, savings institutions, and credit unions
+```{r}
 
-You can also embed plots, for example:
+dat.cbp2019 <- read_csv(here::here("raw/CountyPredictors", "cbp19co.txt"))
+dat2.cbp2019 <- dat.cbp2019 %>% 
+  filter(naics %in% c("522110","522120" ,"522130")) %>% 
+  select( fipstate, fipscty, est) %>% 
+  mutate(fips_clean = paste(fipstate, fipscty, sep = "")) %>% 
+  group_by(fips_clean) %>% 
+  summarise(nbanks = sum(est))
 
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# County Income Inequaltiy
+https://www.countyhealthrankings.org/app/colorado/2017/measure/factors/44/datasource
+
+NOTE: May have to download separate data set for each state...
+
+#Merge County predictors with other county-level file
+```{r}
+
+```
+

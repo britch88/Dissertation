@@ -256,3 +256,13 @@ ggplot(states.df2, aes(variable,state)) +
 
 ```
 
+# save analysis file
+```{r}
+
+analysis.geo <- analysis.df
+
+saveRDS(analysis.geo, file = here::here("rda","analysis.geo.rds"))
+write.csv(analysis.geo, file = here::here("rda","analysis.geo.csv"))
+
+```
+

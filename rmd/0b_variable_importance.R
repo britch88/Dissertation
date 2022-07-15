@@ -1,5 +1,5 @@
 # Sourcing in get_model_specs function
-source(here::here("R", "0e_learner_training.R"))
+source(here::here("rmd", "0e_learner_training.R"))
 
 
 # Packages
@@ -19,7 +19,7 @@ library(parsnip)      # Framework to put model through
 library(purrr)        # For mapping functions
 library(ranger)       # For random forest algorithm
 library(Rcpp)
-library(renv)         # For package version stability
+#library(renv)         # For package version stability
 library(rio)          # For Reading in all sorts of data files: Function
 library(stringr)      # For string expressions
 library(tidymodels)   # For Tidy Model framework

@@ -5,10 +5,10 @@
 #########################################################################
 
 # Sourcing helper functions
-source(here::here("R", "0c_learner_training_helpers.R"))
-source(here::here("R", "0d_helpers.R"))
-source(here::here("R", "0f_performance_metrics.R"))
-source(here::here("R", "0g_plots.R"))
+source(here::here("rmd", "0c_learner_training_helpers.R"))
+source(here::here("rmd", "0d_helpers.R"))
+source(here::here("rmd", "0f_performance_metrics.R"))
+source(here::here("rmd", "0g_plots.R"))
 
 #' This function takes in a model specification,
 #' training data, and test data, and returns predictions on the test data.
