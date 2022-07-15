@@ -59,6 +59,16 @@ NOTE: May have to download separate data set for each state...
 
 #Merge County predictors with other county-level file
 ```{r}
+# reading in geo file
+analysis.geo1 <- readRDS(here::here("rda","analysis.geo.rds"))
+
+#put all data frames into list
+df_list <- list(analysis.geo1, dat2, dat2.cbp2019)
+
+#merge all data frames in list
+analysis.dat.combo <- df_list %>% reduce(full_join, by='fips_clean')
+
+
 
 ```
 
