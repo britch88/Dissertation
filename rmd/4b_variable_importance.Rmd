@@ -3,16 +3,344 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-```{r}
-plot(cars)
+```{r dataPath, messsage = FALSE, warning = FALSE}
+#-------------------------#
+datapath <- "rda"    # Insert folder storing the data object
+#-------------------------#
+#-------------------------#
+datasetname <- "analysis.vi.rds" # Insert the name of the data object
+#-------------------------#
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+We set up the environment with the needed packages
+(all listed in the "packages.R" script) and scripts
+to run variable importance estimation with nonparametric
+bootstrap sampling in the background.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+```{r PackageLoading, message=FALSE, warning=FALSE, include=FALSE}
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+library(discrim)
+library(dplyr)        # For Data Processing
+library(DT)           # For pretty markdown tables
+library(ggplot2)      # For Visualizing in ggplots
+library(ggpubr)       # For ggplot publication comparison
+library(furrr)        # For parallelization
+library(future)       # For parallelization
+library(here)         # For Link & Relative Path Setting
+library(kableExtra)   # For Table formatting
+library(kernlab)      # For ML algorithms
+library(magrittr)     # For Piping
+library(naivebayes)   # For naive bayes ML algorithm
+library(parsnip)      # Framework to put model through
+library(purrr)        # For mapping functions
+library(ranger)       # For random forest algorithm
+library(Rcpp)
+#library(renv)         # For package version stability
+library(rio)          # For Reading in all sorts of data files: Function
+library(stringr)      # For string expressions
+library(tidymodels)   # For Tidy Model framework
+library(vip)          # For Variable Importance calculation and plots
+library(xgboost)      # For xgboost algorithm
+library(yardstick)    # For model results
+library(visdat)       # For visualizing missingness
+
+
+
+
+source(here::here("rmd", "0b_variable_importance.R"))
+source(here::here("rmd", "0d_helpers.R"))
+source(here::here("rmd", "0e_learner_training.R"))
+```
+
+Finally, we load the data set.
+
+```{r LoadingData, message = FALSE, warning = FALSE}
+# load the data set
+#dat <- get(base::load(here::here(datapath,datasetname)))  ### Getting "magic number" error
+dat <-readRDS(here::here("rda","analysis.vi.rds"))
+```
+
+# Specify learners
+```{r LearnerSpecs, message = FALSE, warning = FALSE}
+#-------------------------#
+# Insert both X and A predictors
+predset_x01 <- c("gender_SS", "race_SS", "prev_GPA_SS", 
+                 "num_classes_SS","fam_income_SS", "athlete_SS", 
+                 "advanced_SS", "absences_MS","cur_GPA_MS")      
+# User should insert more if they have more predictor sets
+allPredsets <- list(
+  predset_x01 = predset_x01 
+)
+# Insert name of outcome
+outcomeName <- c("graduate") 
+# Insert modeling approaches for each of the predictor sets
+specifiedLearners <-
+  list(
+    predset_x01 = c("glm", "random_forest") 
+  )
+#-------------------------#
+```
+
+
+
+```{r defaultTuningSpecs, message = FALSE, warning = FALSE}
+# for glm 
+tune_glm <- data.frame(
+  penalty = NULL
+)
+# for lasso 
+# lambda (termed penalty here) is the amount of regularization,
+# mixture (same as alpha) = 1 means lasso here defines the type of regularization
+# mixture (alpha) = 0 means ridge regression
+tune_lasso <- expand.grid(
+  penalty = 0.1,
+  mixture = 1
+) 
+tune_random_forest <- data.frame(
+    m_tries_opt = 3,
+    ntrees_opt = 20,
+    max_depth_opt = 5
+)
+tune_xgboost <- data.frame(
+    tree_depth = 5,
+    trees = 5,
+    learn_rate = 0.2
+)
+tune_naive_bayes <- data.frame(
+    smoothness = 0.5,
+    Laplace = "NULL"
+)
+tune_svm_poly <- data.frame(cost = 10, 
+                            degree = 2, 
+                            scale_factor = .5, 
+                            margin = .15)
+tune_svm_rbf <- data.frame(
+    cost = 10, 
+    rbf_sigma = 1, 
+    margin = .05
+)
+```
+
+In the code chunk below, we save the learner names and specifications.
+
+```{r learnerSpec, warning = FALSE, message = FALSE}
+learnerNames <- NULL
+counter <- 1
+for (i in 1:length(allPredsets))
+{
+    predsetName <- names(allPredsets)[i]
+    algorithmList <- unlist(specifiedLearners[predsetName])
+    for (j in 1:length(algorithmList)){
+        ML <- algorithmList[[j]]
+        learnerName <- paste(ML, predsetName, 1, sep = "_")
+        learnerNames[counter] <- learnerName
+        counter <- counter + 1
+    }
+}
+learnerSpec <- list(
+          datapath = datapath, 
+          trainingDataName = datasetname,
+          outcomeName = outcomeName,
+          allPredsets = allPredsets,
+          specifiedLearners = specifiedLearners,
+          learnerNames = learnerNames,
+          tuningSets = list( # add additional algorithms here if more added above
+            glm = tune_glm,
+            random_forest = tune_random_forest,
+            lasso = tune_lasso,
+            naive_bayes = tune_naive_bayes,
+            xgboost = tune_xgboost,
+            svm_poly = tune_svm_poly,
+            svm_rbf = tune_svm_rbf
+          )
+)
+```
+
+```{r specifiedLearners, warning = FALSE, message = FALSE}
+print(learnerNames)
+```
+
+
+# Checking for missing data
+```{r}
+summary(analysis.dat.combo)
+visdat::vis_dat(analysis.dat.combo)
+visdat::vis_miss(analysis.dat.combo)
+100 * (apply(apply(analysis.dat.combo, 2, is.na), 2, sum)/nrow(analysis.dat.combo))
+
+check.miss <-filter(analysis.dat.combo, is.na(nbanks)==1)
+as.data.frame(table(check.miss$state_abb, useNA = "always"))
+
+
+dat_na_rm <- na.omit(dat)
+100 * (nrow(dat_na_rm)/nrow(dat))
+```
+
+# Deleting records with missing predictors
+
+```{r}
+dat <- na.omit(dat)
+```
+
+
+```{r}
+#-----------------------------------#
+outcome_variable <- "graduate" # Insert outcome variable
+continuous_variables <- c("prev_GPA_SS", "fam_income_SS",
+  "prev_GPA_SS", "cur_GPA_MS",
+  "num_classes_SS","absences_MS") # Insert continuous variable
+factor_variables <- c("gender_SS", "race_SS",
+                      "athlete_SS","advanced_SS") # Insert factor variable
+#-----------------------------------#
+```
+
+```{r, warning = FALSE}
+avg_tab <-
+  dat %>%
+    dplyr::group_by_(as.symbol(outcome_variable)) %>%
+    dplyr::summarize_at(vars(continuous_variables), ~round(mean(.),3), na.rm = TRUE)
+avg_tab <-
+  datatable(avg_tab,
+    class = "cell-border stripe",
+    rownames = FALSE,
+    extensions = "FixedColumns",
+    options = list(
+      dom = 't',
+      scrollX = TRUE,
+      fixedColumns = TRUE
+  ))
+avg_tab
+```
+
+```{r}
+prop_table <- NULL
+for(i in 1:length(factor_variables)){
+  prop_table[[i]] <-
+    dat %>%
+      dplyr::group_by_(as.symbol(outcome_variable), as.symbol(factor_variables[i])) %>%
+      tally() %>%
+      dplyr::mutate(freq = round(100 * (n/sum(n)),3))
+}
+```
+
+```{r}
+htmltools::tagList(
+  lapply(prop_table, datatable, class = "cell-border stripe", rownames = FALSE, width = 400)
+)
+```
+
+
+
+```{r viBootSpec1}
+#-------------------------#
+learnerName <- "glm_predset_x01_1" # Insert Learner Name
+varInfo <- tibble(
+  # Insert target predictors for variable importance analysis
+  varSelect = c("gender_SS", "prev_GPA_SS", "prev_GPA_SS"), 
+  # Note that your varLowVal and varHighVal specifications have to match correspondingly
+  # in index position in vector here with the target predictors you specified in varSelect.
+  varLowVal = c(0, 4.0, 2.5), 
+  varHighVal = c(1, 4.5, 3.5) 
+)
+bootDraws <- 1000
+stratVar <- NULL
+#-------------------------#
+```
+
+Below, we print the `varInfo` tibble to check that the specification is right.
+
+```{r printInfo1}
+print(varInfo)
+```
+
+## Estimation
+
+```{r viBoot1, cache = TRUE}
+vi_est <- get_all_vi_ests(
+  dat = dat,
+  learnerName = learnerName,
+  learnerSpec = learnerSpec,
+  varInfo = varInfo,
+  stratVar = stratVar,
+  bootDraws = bootDraws,
+  parallel = TRUE
+)
+```
+
+The table below shows raw estimates of the predictor probability differences
+between the two states for each of the target predictors.
+The statistically significant estimates are 
+where the confidence interval of the estimate does not have 0 within its range.
+
+```{r viSummary1}
+vi_est_summary <- vi_est %>% 
+  dplyr::group_by(predictor, lowValue, highValue) %>%
+  dplyr::summarise(estimate = mean(est, na.rm = TRUE), 
+                   se = sd(est, na.rm = TRUE), 
+                   ci_low = quantile(est, .025, na.rm = TRUE), 
+                   ci_high = quantile(est, .975, na.rm = TRUE)) %>%
+  dplyr::mutate(
+    outcome = learnerSpec$outcomeName) %>%
+  dplyr::mutate(significant = 
+    factor(if_else((ci_low < 0 & ci_high < 0) | (ci_low > 0 & ci_high > 0),
+           "Yes", "No"), levels = c("Yes", "No"))) 
+head(vi_est_summary)
+```
+
+```{r viPercentSummary1}
+vi_percent_est_summary <- vi_est_summary %>% 
+  mutate(estimate_percent = round(100 * estimate, 2),
+         ci_low_percent = round(100 * ci_low, 2),
+         ci_high_percent = round(100 * ci_high, 2)) %>%
+  mutate(predictor_levels = paste(predictor, lowValue, highValue, sep = "_")) %>%
+  select(predictor_levels, predictor, lowValue, highValue,
+         estimate_percent, ci_low_percent, ci_high_percent,
+         outcome, significant)
+head(vi_percent_est_summary)
+```
+
+The graph below ranks the relative importance of each target predictor to the outcome.
+Those predictors with green highlighted confidence intervals are those with statistically
+significant differences.
+For instance, out of our sample students, those with a previous GPA of 3.5 has an approximately
+3% higher chance of graduating than those with a previous GPA of 2.5
+
+```{r}
+outcome <- unique(vi_percent_est_summary$outcome)
+predictorLabels <- paste0(
+  vi_percent_est_summary$predictor, "\n",
+  vi_percent_est_summary$lowValue, " to ",
+  vi_percent_est_summary$highValue
+)
+# Plot variable importance 
+ggplot2::ggplot(vi_percent_est_summary,
+  aes(x = factor(predictor_levels),
+      y = estimate_percent, color = significant)
+  ) +
+  ggplot2::geom_segment(
+    aes(xend = predictor_levels, yend = ci_high_percent), size = 1
+  ) +
+  ggplot2::geom_segment(
+    aes(xend = predictor_levels, yend = ci_low_percent), size = 1
+  ) +
+  ggplot2::geom_point(size = 3) +
+  ggplot2::geom_text(
+    aes(label = paste0(round(estimate_percent), "%"), vjust = -.7), size = 4
+  ) +
+  ggplot2::coord_flip() +
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.title = element_blank(), legend.position = "none",
+                 text = element_text(size = 12)) +
+  scale_color_manual(values = c("Yes" = "forestgreen", "No" = "darkgrey")) +
+  scale_x_discrete(labels = predictorLabels) +
+  xlab("") +
+  ylab("Estimate") +
+  ggtitle(
+    paste("Variable Importance of Predictors for \nOutcome:", outcome)) +
+  theme (plot.title = element_text(size = 12,
+                                   face = "bold",
+                                   vjust = 1,
+                                   hjust = 0.5))
+```
+
+
