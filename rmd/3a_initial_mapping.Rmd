@@ -27,7 +27,7 @@ library(rgdal)
 library(spdplyr)
 library(stringr)
 library(gstat)
-library(elsa)
+#library(elsa)
 library(sp)
 ```
 
@@ -133,7 +133,8 @@ checkmerge <- filter(countydat, is.na(in.s) |  is.na(in.t))
 
 
 ggplot() + geom_sf(data = filter(countydat, STATEFP != "02" & STATEFP != "15", is.na(group)==0), color="black",
-                    size=0.25, mapping= aes(fill=group))
+                    size=0.25, mapping= aes(fill=group)) + scale_fill_manual(values = c("coral4", "blue", "cyan",
+                                "cadetblue", "darkmagenta","cornflowerblue"))
 
 
 ```
