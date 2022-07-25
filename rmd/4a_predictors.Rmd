@@ -37,22 +37,50 @@ dat2 <- dat %>%
 
 ```
 
-# County Business Patterns Data: 2019
-https://www.census.gov/data/datasets/2019/econ/cbp/2019-cbp.html
+# County Business Patterns Data: 2017
+https://www.census.gov/data/datasets/2017/econ/cbp/2017-cbp.html
 technical documentation: https://www.census.gov/programs-surveys/cbp/technical-documentation/methodology.html
 
 Reading in data and selecting naics codes corresponding to commercial banks, savings institutions, and credit unions
 ```{r}
 
-dat.cbp2019 <- read_csv(here::here("raw/CountyPredictors", "cbp19co.txt"))
-dat2.cbp2019 <- dat.cbp2019 %>% 
+dat.cbp2017 <- read_csv(here::here("raw/CountyPredictors/County Business Patterns", "cbp17co.txt"))
+dat.banks2017 <- dat.cbp2017 %>% 
   filter(naics %in% c("522110","522120" ,"522130")) %>% 
   select( fipstate, fipscty, est) %>% 
   mutate(fips_clean = paste(fipstate, fipscty, sep = "")) %>% 
   group_by(fips_clean) %>% 
   summarise(nbanks = sum(est))
 
+
+dat.food2017 <- dat.cbp2017 %>% 
+  filter(naics %in% c("445110","445230")) %>% 
+  select( fipstate, fipscty, est) %>% 
+  mutate(fips_clean = paste(fipstate, fipscty, sep = "")) %>% 
+  group_by(fips_clean) %>% 
+  summarise(food = sum(est))
+
 ```
+
+
+# RWJF County Health Rankings 2017
+```{r}
+# First reading in the main measures for each state
+library(readxl)
+AL2017 <- read_excel("/data/share/xproject/training/Practice/henderson/Dissertation/raw/CountyPredictors/RWJF County Health Rankings 2017/2017 County Health Rankings Alabama Data - v2.xls", 
+    sheet = "Ranked Measure Data", skip = 1)
+
+
+View(X2017_County_Health_Rankings_Alabama_Data_v2)
+```
+
+
+# Access to Primary Care
+```{r}
+
+```
+
+
 
 # County Income Inequaltiy
 https://www.countyhealthrankings.org/app/colorado/2017/measure/factors/44/datasource
