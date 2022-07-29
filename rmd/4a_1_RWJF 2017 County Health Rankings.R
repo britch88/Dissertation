@@ -364,3 +364,23 @@ rwj2017.final <- merge(rwjmain2017.keep,rwjsupp2017.keep, by = c('FIPS','State',
 ###### Save the Data
 saveRDS(rwj2017.final, here::here("rda","rwj2017.rds"))
 
+
+#### NJ Data set for NJ CARE
+library(tidyverse)
+library(readxl)
+
+nj2017m <- read_excel("/data/share/xproject/training/Practice/henderson/Dissertation/raw/CountyPredictors/RWJF County Health Rankings 2017/2017 County Health Rankings New Jersey Data - v2.xls", 
+                     sheet = "Ranked Measure Data", skip = 1)
+
+nj2017s <- read_excel("/data/share/xproject/training/Practice/henderson/Dissertation/raw/CountyPredictors/RWJF County Health Rankings 2017/2017 County Health Rankings New Jersey Data - v2.xls", 
+                     sheet = "Additional Measure Data", skip = 1)
+
+nj.combo <- merge(nj2017m,nj2017s, by = c('FIPS','State','County'))
+nj.combo2 <- nj.combo %>% select(-contains("Z-Score"),-contains("95% CI"))
+
+
+
+###### Save the Data
+saveRDS(nj.combo2, here::here("rda","nj2017.rds"))
+
+
