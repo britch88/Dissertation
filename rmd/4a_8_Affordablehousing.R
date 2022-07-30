@@ -47,7 +47,7 @@ rent2017 <- read_csv("raw/CountyPredictors/Affordable Housing/ACSDT5Y2017.B25070
 
 rent2017.2 <- rent2017 %>% 
   select(-contains("Margin of Error!")) %>%
-  mutate(rentburden.rent = sum(.[[7]] +.[[8]]  + .[[9]] + .[[10]]))
+  mutate(rentburden.rent = .[[7]] +.[[8]]  + .[[9]] + .[[10]])
 
 
 ##### combine 3 files
@@ -79,6 +79,17 @@ burden.nomortgage.combo <- nomortgage2017.3 %>%
 
 
 #merge all data frames together
-df_list <- list(burden.mortgage.combo, burden.nomortgage.combo, burden.rent.combo)      
-burden.combo <- df_list %>% reduce(full_join, by= c('id','geo_name'))
+df_list <- list(burden.mortgage.combo, burden.nomortgage.combo, burden.rent.combo)  
+
+burden.combo <- df_list %>% reduce(full_join, by= c('id','geo_name')) %>% 
+  mutate(total.households = total.nomortgage + total.mortgage + total.rent,
+         sum.tot = sum(total.households),
+         total.rentburden = rentburden.mortgage + rentburden.nomortgage + rentburden.rent,
+         rentburden_pct = total.rentburden/total.households * 100)
+
+
+rentburden2017 <- burden.combo %>% 
+  select(id, geo_name, total.households, total.rentburden, rentburden_pct)
+
+saveRDS(rentburden2017, here::here("rda","rentburden2017.rds"))
 
