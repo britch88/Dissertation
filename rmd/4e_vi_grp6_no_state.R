@@ -85,19 +85,9 @@ predset_x01 <- c(
   "country_division_east north central",     "country_division_east south central",     "country_division_middle atlantic",       
   "country_division_mountain",     "country_division_new england",  "country_division_pacific",     
   "country_division_possessions",  "country_division_south atlantic",         "country_division_west north central",    
-  "country_division_west south central",
+  "country_division_west south central"
   
-  # Leaving out Texas since it is state with most counties
-  "state_alabama",      "state_alaska",        "state_arizona",       "state_arkansas",      "state_california",   
-  "state_colorado",     "state_connecticut",   "state_delaware",      "state_florida",       "state_georgia",       
-  "state_hawaii",       "state_idaho",         "state_illinois",      "state_indiana",       "state_iowa",          
-  "state_kansas",       "state_kentucky",      "state_louisiana",     "state_maine",         "state_maryland",     
-  "state_massachusetts","state_michigan",      "state_minnesota",     "state_mississippi",   "state_missouri",      
-  "state_montana",      "state_nebraska",      "state_nevada",        "state_new hampshire", "state_new jersey",    
-  "state_new mexico",   "state_new york",      "state_north carolina","state_north dakota",  "state_ohio",         
-  "state_oklahoma",     "state_oregon",        "state_pennsylvania",  "state_rhode island",  "state_south carolina",
-  "state_south dakota", "state_tennessee",                            "state_utah",          "state_vermont",       
-  "state_virginia",     "state_washington",    "state_west virginia", "state_wisconsin",     "state_wyoming"       )  
+)  
 
 
 # User should insert more if they have more predictor sets
@@ -215,8 +205,8 @@ continuous_variables <- c() # Insert continuous variable
 factor_variables <- predset_x01 # Insert factor variable
 #-----------------------------------#
 
-lows <-rep(c(0),each=131)
-highs <-rep(c(1),each=131)
+lows <-rep(c(0),each=82)
+highs <-rep(c(1),each=82)
 
 #-------------------------#
 learnerName <- "glm_predset_x01_1" # Insert Learner Name
@@ -272,7 +262,7 @@ vi_est_grp6_summary <- vi_est_grp6 %>%
 
 head(vi_est_grp6_summary)
 
-saveRDS(vi_est_grp6_summary, here::here("rda/vi results","vi_grp6.rds"))
+saveRDS(vi_est_grp6_summary, here::here("rda/vi results","vi_grp6_no_state.rds"))
 
 # The graph below ranks the relative importance of each target predictor to the outcome.
 # Those predictors with green highlighted confidence intervals are those with statistically significant differences.

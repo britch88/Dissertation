@@ -228,7 +228,7 @@ varInfo <- tibble(
   varLowVal  = lows, 
   varHighVal = highs 
 )
-bootDraws <- 100
+bootDraws <- 1000
 stratVar <- NULL
 #-------------------------#
 print(varInfo)

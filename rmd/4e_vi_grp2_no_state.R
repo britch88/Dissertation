@@ -85,19 +85,9 @@ predset_x01 <- c(
   "country_division_east north central",     "country_division_east south central",     "country_division_middle atlantic",       
   "country_division_mountain",     "country_division_new england",  "country_division_pacific",     
   "country_division_possessions",  "country_division_south atlantic",         "country_division_west north central",    
-  "country_division_west south central",
+  "country_division_west south central"
   
-  # Leaving out Texas since it is state with most counties
-  "state_alabama",      "state_alaska",        "state_arizona",       "state_arkansas",      "state_california",   
-  "state_colorado",     "state_connecticut",   "state_delaware",      "state_florida",       "state_georgia",       
-  "state_hawaii",       "state_idaho",         "state_illinois",      "state_indiana",       "state_iowa",          
-  "state_kansas",       "state_kentucky",      "state_louisiana",     "state_maine",         "state_maryland",     
-  "state_massachusetts","state_michigan",      "state_minnesota",     "state_mississippi",   "state_missouri",      
-  "state_montana",      "state_nebraska",      "state_nevada",        "state_new hampshire", "state_new jersey",    
-  "state_new mexico",   "state_new york",      "state_north carolina","state_north dakota",  "state_ohio",         
-  "state_oklahoma",     "state_oregon",        "state_pennsylvania",  "state_rhode island",  "state_south carolina",
-  "state_south dakota", "state_tennessee",                            "state_utah",          "state_vermont",       
-  "state_virginia",     "state_washington",    "state_west virginia", "state_wisconsin",     "state_wyoming"       )  
+)  
 
 
 # User should insert more if they have more predictor sets
@@ -105,7 +95,7 @@ allPredsets <- list(
   predset_x01 = predset_x01 
 )
 # Insert name of outcome
-outcomeName <- c("Grp6") 
+outcomeName <- c("Grp2") 
 # Insert modeling approaches for each of the predictor sets
 specifiedLearners <-
   list(
@@ -187,7 +177,7 @@ print(learnerNames)
 
 
 #drop unused variables
-dat2 <- dat %>% select(predset_x01,Grp6)
+dat2 <- dat %>% select(predset_x01,Grp2)
 # Checking for missing data
 #summary(dat2)
 #visdat::vis_dat(dat)
@@ -198,7 +188,7 @@ check.miss <- as.data.frame(100 * (apply(apply(dat2, 2, is.na), 2, sum)/nrow(dat
 
 # Deleting records with missing predictors
 
-dat3 <- drop_na(dat2,c(predset_x01, "Grp6"))
+dat3 <- drop_na(dat2,c(predset_x01, "Grp2"))
 # 230 records deleted
 
 # dat4 <- dat2 %>% select( bankrate.na ,  bankrate.ltp25 ,  bankrate.gtp75 , 
@@ -206,17 +196,17 @@ dat3 <- drop_na(dat2,c(predset_x01, "Grp6"))
 #                          unemployment_rate_2017.gtp75 ,  median_household_income_2017.gtp75 ,
 #                          median_household_income_2017.ltp25 ,  some_college_2017.ltp25 ,
 #                          some_college_2017.gtp75 ,  hs_grad_2017.ltp25 ,  hs_grad_2017.gtp75 ,
-#                          broadband_2017.ltp25 , broadband_2017.gtp75 ,  Grp6 ) %>% 
+#                          broadband_2017.ltp25 , broadband_2017.gtp75 ,  Grp2 ) %>% 
 #   mutate_if(is.logical,as.numeric)
 
 #-----------------------------------#
-outcome_variable <- "Grp6" # Insert outcome variable
+outcome_variable <- "Grp2" # Insert outcome variable
 continuous_variables <- c() # Insert continuous variable
 factor_variables <- predset_x01 # Insert factor variable
 #-----------------------------------#
 
-lows <-rep(c(0),each=131)
-highs <-rep(c(1),each=131)
+lows <-rep(c(0),each=82)
+highs <-rep(c(1),each=82)
 
 #-------------------------#
 learnerName <- "glm_predset_x01_1" # Insert Learner Name
@@ -247,7 +237,7 @@ vi_est <- get_all_vi_ests(
 
 
 
-vi_est_grp6 <- vi_est %>% 
+vi_est_grp2 <- vi_est %>% 
   dplyr::group_by(predictor, lowValue, highValue) %>%
   dplyr::summarise(estimate = mean(est, na.rm = TRUE), 
                    se = sd(est, na.rm = TRUE), 
@@ -258,10 +248,10 @@ vi_est_grp6 <- vi_est %>%
   dplyr::mutate(significant = 
                   factor(if_else((ci_low < 0 & ci_high < 0) | (ci_low > 0 & ci_high > 0),
                                  "Yes", "No"), levels = c("Yes", "No"))) 
-head(vi_est_grp6)
+head(vi_est_grp2)
 
 
-vi_est_grp6_summary <- vi_est_grp6 %>% 
+vi_est_grp2_summary <- vi_est_grp2 %>% 
   mutate(estimate_percent = round(100 * estimate, 2),
          ci_low_percent = round(100 * ci_low, 2),
          ci_high_percent = round(100 * ci_high, 2)) %>%
@@ -270,22 +260,22 @@ vi_est_grp6_summary <- vi_est_grp6 %>%
          estimate_percent, ci_low_percent, ci_high_percent,
          outcome, significant)
 
-head(vi_est_grp6_summary)
+head(vi_est_grp2_summary)
 
-saveRDS(vi_est_grp6_summary, here::here("rda/vi results","vi_grp6.rds"))
+saveRDS(vi_est_grp2_summary, here::here("rda/vi results","vi_grp2_no_state.rds"))
 
 # The graph below ranks the relative importance of each target predictor to the outcome.
 # Those predictors with green highlighted confidence intervals are those with statistically significant differences.
 # Those with 1 have an approximately N% higher chance of being in group than those with 0
 
-outcome <- unique(vi_est_grp6_summary$outcome)
+outcome <- unique(vi_est_grp2_summary$outcome)
 predictorLabels <- paste0(
-  vi_est_grp6_summary$predictor, "\n",
-  vi_est_grp6_summary$lowValue, " to ",
-  vi_est_grp6_summary$highValue
+  vi_est_grp2_summary$predictor, "\n",
+  vi_est_grp2_summary$lowValue, " to ",
+  vi_est_grp2_summary$highValue
 )
 # Plot variable importance 
-ggplot2::ggplot(vi_est_grp6_summary,
+ggplot2::ggplot(vi_est_grp2_summary,
                 aes(x = factor(predictor_levels),
                     y = estimate_percent, color = significant)
 ) +
