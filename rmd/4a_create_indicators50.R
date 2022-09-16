@@ -74,9 +74,9 @@ combo.dat7 <- combo.dat6 %>%
          bankrate2017.na = as.numeric(is.na(bankrate)),
          bankrate2017.gtp50 = ifelse(is.na(bankrate) == 0 & bankrate > quantile(bankrate, .50, na.rm = TRUE),1,0),
  
-         poverty_2017.gtp50 = poverty_2017 < quantile(poverty_2017,.50, na.rm = TRUE),
+         poverty_2017.ltp50 = poverty_2017 < quantile(poverty_2017,.50, na.rm = TRUE),
          
-         unemployment_rate_2017.gtp50 = unemployment_rate_2017 < quantile(unemployment_rate_2017, .50, na.rm = TRUE),
+         unemployment_rate_2017.ltp50 = unemployment_rate_2017 < quantile(unemployment_rate_2017, .50, na.rm = TRUE),
 
          median_household_income_2017.gtp50 = median_household_income_2017 > quantile(median_household_income_2017, .50, na.rm = TRUE),
 
@@ -87,58 +87,96 @@ combo.dat7 <- combo.dat6 %>%
          broadband_2017.gtp50 = broadband_2017 > quantile(broadband_2017, .50, na.rm = TRUE),
 
          disconnected.2017.na = as.numeric(is.na(`% Disconnected Youth`)),
-         disconnected.2017.gtp50 = ifelse(is.na(`% Disconnected Youth`) == 0 & `% Disconnected Youth` < quantile(`% Disconnected Youth`, .50, na.rm = TRUE),1,0),
+         disconnected.2017.ltp50 = ifelse(is.na(`% Disconnected Youth`) == 0 & `% Disconnected Youth` < quantile(`% Disconnected Youth`, .50, na.rm = TRUE),1,0),
 
         food.2017.na = as.numeric(is.na(food)),
         food.2017.gtp50 = ifelse(is.na(food) == 0 & food > quantile(food, .50, na.rm = TRUE),1,0),
 
         violent.2017.na = as.numeric(is.na(`Violent Crime Rate`)),
-        violent.2017.gtp50 = ifelse(is.na(`Violent Crime Rate`) == 0 & `Violent Crime Rate` < quantile(`Violent Crime Rate`, .50, na.rm = TRUE),1,0),
+        violent.2017.ltp50 = ifelse(is.na(`Violent Crime Rate`) == 0 & `Violent Crime Rate` < quantile(`Violent Crime Rate`, .50, na.rm = TRUE),1,0),
 
         segregation.2017.na = as.numeric(is.na(segregation_white_nonwhite)),
-        segregation.2017.gtp50 = ifelse(is.na(segregation_white_nonwhite) == 0 & segregation_white_nonwhite < quantile(segregation_white_nonwhite, .50, na.rm = TRUE),1,0),
+        segregation.2017.ltp50 = ifelse(is.na(segregation_white_nonwhite) == 0 & segregation_white_nonwhite < quantile(segregation_white_nonwhite, .50, na.rm = TRUE),1,0),
 
       pcp_2017.gtp50 = `PCP Rate` > quantile(`PCP Rate`, .50, na.rm = TRUE),
 
-      lbw_2017.gtp50 = `% LBW` < quantile(`% LBW`, .50, na.rm = TRUE),
+      lbw_2017.ltp50 = `% LBW` < quantile(`% LBW`, .50, na.rm = TRUE),
 
       
-      income_ratio_2017.gtp50 = `Income Ratio` < quantile(`Income Ratio`, .50, na.rm = TRUE),
+      income_ratio_2017.ltp50 = `Income Ratio` < quantile(`Income Ratio`, .50, na.rm = TRUE),
 
       
-      uninsured_2017.gtp50 = `% Uninsured` < quantile(`% Uninsured`, .50, na.rm = TRUE),
+      uninsured_2017.ltp50 = `% Uninsured` < quantile(`% Uninsured`, .50, na.rm = TRUE),
 
       
-      under18_2017.gtp50 = `% < 18` > quantile(`% < 18`, .50, na.rm = TRUE),
-
+      under18_2017.ltp25 = `% < 18` < quantile(`% < 18`, .25, na.rm = TRUE),
+      under18_2017.gtp75 = `% < 18` > quantile(`% < 18`, .75, na.rm = TRUE),
+      under18_2017.p25top75 = `% < 18` <= quantile(`% < 18`, .75, na.rm = TRUE) 
+      & `% < 18` >= quantile(`% < 18`,.25, na.rm = TRUE),
       
-      over64_2017.gtp50 = `% 65 and over` > quantile(`% 65 and over`, .50, na.rm = TRUE),
       
-      black_2017.gtp50 = `% African American` > quantile(`% African American`, .50, na.rm = TRUE),
+      over64_2017.ltp25 = `% 65 and over` < quantile(`% 65 and over`, .25, na.rm = TRUE),
+      over64_2017.gtp75 = `% 65 and over` > quantile(`% 65 and over`, .75, na.rm = TRUE),
+      over64_2017.p25top75 = `% 65 and over` <= quantile(`% 65 and over`, .75, na.rm = TRUE) 
+      & `% 65 and over` >= quantile(`% 65 and over`,.25, na.rm = TRUE),
       
-      native_2017.gtp50 = `% American Indian/Alaskan Native` > quantile(`% American Indian/Alaskan Native`, .50, na.rm = TRUE),
       
-      pacific_islander_2017.gtp50 = `% Native Hawaiian/Other Pacific Islander` > quantile(`% Native Hawaiian/Other Pacific Islander`, .50, na.rm = TRUE),
+      black_2017.ltp25 = `% African American` < quantile(`% African American`, .25, na.rm = TRUE),
+      black_2017.gtp75 = `% African American` > quantile(`% African American`, .75, na.rm = TRUE),
+      black_2017.p25top75 = `% African American` <= quantile(`% African American`, .75, na.rm = TRUE) 
+      & `% African American` >= quantile(`% African American`,.25, na.rm = TRUE),
       
-      hispanic_2017.gtp50 = `% Hispanic` > quantile(`% Hispanic`, .50, na.rm = TRUE),
       
-      white_2017.gtp50 = `% Non-Hispanic White` > quantile(`% Non-Hispanic White`, .50, na.rm = TRUE),
-
-      lim_eng_2017.gtp50 = `% Not Proficient in English` > quantile(`% Not Proficient in English`, .50, na.rm = TRUE),
-
-      female_2017.gtp50 = `% Female` > quantile(`% Female`, .50, na.rm = TRUE),
+      native_2017.ltp25 = `% American Indian/Alaskan Native` < quantile(`% American Indian/Alaskan Native`, .25, na.rm = TRUE),
+      native_2017.gtp75 = `% American Indian/Alaskan Native` > quantile(`% American Indian/Alaskan Native`, .75, na.rm = TRUE),
+      native_2017.p25top75 = `% American Indian/Alaskan Native` <= quantile(`% American Indian/Alaskan Native`, .75, na.rm = TRUE) 
+      & `% American Indian/Alaskan Native` >= quantile(`% American Indian/Alaskan Native`,.25, na.rm = TRUE),
       
-      rural_2017.gtp50 = `% Rural` > quantile(`% Rural`, .50, na.rm = TRUE),
+      
+      pacific_islander_2017.ltp25 = `% Native Hawaiian/Other Pacific Islander` < quantile(`% Native Hawaiian/Other Pacific Islander`, .25, na.rm = TRUE),
+      pacific_islander_2017.gtp75 = `% Native Hawaiian/Other Pacific Islander` > quantile(`% Native Hawaiian/Other Pacific Islander`, .75, na.rm = TRUE),
+      pacific_islander_2017.p25top75 = `% Native Hawaiian/Other Pacific Islander` <= quantile(`% Native Hawaiian/Other Pacific Islander`, .75, na.rm = TRUE) 
+      & `% Native Hawaiian/Other Pacific Islander` >= quantile(`% Native Hawaiian/Other Pacific Islander`,.25, na.rm = TRUE),
+      
+      
+      hispanic_2017.ltp25 = `% Hispanic` < quantile(`% Hispanic`, .25, na.rm = TRUE),
+      hispanic_2017.gtp75 = `% Hispanic` > quantile(`% Hispanic`, .75, na.rm = TRUE),
+      hispanic_2017.p25top75 = `% Hispanic` <= quantile(`% Hispanic`, .75, na.rm = TRUE) 
+      & `% Hispanic` >= quantile(`% Hispanic`,.25, na.rm = TRUE),
+      
+      
+      white_2017.ltp25 = `% Non-Hispanic White` < quantile(`% Non-Hispanic White`, .25, na.rm = TRUE),
+      white_2017.gtp75 = `% Non-Hispanic White` > quantile(`% Non-Hispanic White`, .75, na.rm = TRUE),
+      white_2017.p25top75 = `% Non-Hispanic White` <= quantile(`% Non-Hispanic White`, .75, na.rm = TRUE) 
+      & `% Non-Hispanic White` >= quantile(`% Non-Hispanic White`,.25, na.rm = TRUE),
+      
+      
+      lim_eng_2017.ltp25 = `% Not Proficient in English` < quantile(`% Not Proficient in English`, .25, na.rm = TRUE),
+      lim_eng_2017.gtp75 = `% Not Proficient in English` > quantile(`% Not Proficient in English`, .75, na.rm = TRUE),
+      lim_eng_2017.p25top75 = `% Not Proficient in English` <= quantile(`% Not Proficient in English`, .75, na.rm = TRUE) 
+      & `% Not Proficient in English` >= quantile(`% Not Proficient in English`,.25, na.rm = TRUE),
+      
+      
+      female_2017.ltp25 = `% Female` < quantile(`% Female`, .25, na.rm = TRUE),
+      female_2017.gtp75 = `% Female` > quantile(`% Female`, .75, na.rm = TRUE),
+      female_2017.p25top75 = `% Female` <= quantile(`% Female`, .75, na.rm = TRUE) 
+      & `% Female` >= quantile(`% Female`,.25, na.rm = TRUE),
+      
+      
+      rural_2017.ltp25 = `% Rural` < quantile(`% Rural`, .25, na.rm = TRUE),
+      rural_2017.gtp75 = `% Rural` > quantile(`% Rural`, .75, na.rm = TRUE),
+      rural_2017.p25top75 = `% Rural` <= quantile(`% Rural`, .75, na.rm = TRUE) 
+      & `% Rural` >= quantile(`% Rural`,.25, na.rm = TRUE),
+      
       
       prek_2017.gtp50 = prekpct > quantile(prekpct, .50, na.rm = TRUE),
 
       
-      rentburden_2017.gtp50 = rentburden_pct < quantile(rentburden_pct, .50, na.rm = TRUE),
+      rentburden_2017.ltp50 = rentburden_pct < quantile(rentburden_pct, .50, na.rm = TRUE),
 
-      deaths_2017.lt50 = is.na(deaths_age_adj_rate2017),
-      deaths_2017.gtp50 = ifelse(is.na(deaths_age_adj_rate2017)==0 & deaths_age_adj_rate2017 < quantile(deaths_age_adj_rate2017, .50, na.rm = TRUE),1,0),
+      deaths_2017.ltp50 = ifelse(is.na(deaths_age_adj_rate2017)==1 | deaths_age_adj_rate2017 < quantile(deaths_age_adj_rate2017, .50, na.rm = TRUE),1,0),
 
-      incarcerated_2017.gtp50 = incarcerated_rate < quantile(incarcerated_rate, .50, na.rm = TRUE),
+      incarcerated_2017.ltp50 = incarcerated_rate < quantile(incarcerated_rate, .50, na.rm = TRUE),
 
       voting_2017.gtp50 = voting_pct > quantile(voting_pct, .50, na.rm = TRUE),
 
