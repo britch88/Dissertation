@@ -74,9 +74,9 @@ combo.dat7 <- combo.dat6 %>%
          bankrate2017.na = as.numeric(is.na(bankrate)),
          bankrate2017.gtp90 = ifelse(is.na(bankrate) == 0 & bankrate > quantile(bankrate, .90, na.rm = TRUE),1,0),
  
-         poverty_2017.ltp90 = poverty_2017 < quantile(poverty_2017,.10, na.rm = TRUE),
+         poverty_2017.ltp10 = poverty_2017 < quantile(poverty_2017,.10, na.rm = TRUE),
          
-         unemployment_rate_2017.ltp90 = unemployment_rate_2017 < quantile(unemployment_rate_2017, .10, na.rm = TRUE),
+         unemployment_rate_2017.ltp10 = unemployment_rate_2017 < quantile(unemployment_rate_2017, .10, na.rm = TRUE),
 
          median_household_income_2017.gtp90 = median_household_income_2017 > quantile(median_household_income_2017, .90, na.rm = TRUE),
 
@@ -87,26 +87,26 @@ combo.dat7 <- combo.dat6 %>%
          broadband_2017.gtp90 = broadband_2017 > quantile(broadband_2017, .90, na.rm = TRUE),
 
          disconnected.2017.na = as.numeric(is.na(`% Disconnected Youth`)),
-         disconnected.2017.ltp90 = ifelse(is.na(`% Disconnected Youth`) == 0 & `% Disconnected Youth` < quantile(`% Disconnected Youth`, .10, na.rm = TRUE),1,0),
+         disconnected.2017.ltp10 = ifelse(is.na(`% Disconnected Youth`) == 0 & `% Disconnected Youth` < quantile(`% Disconnected Youth`, .10, na.rm = TRUE),1,0),
 
         food.2017.na = as.numeric(is.na(food)),
         food.2017.gtp90 = ifelse(is.na(food) == 0 & food > quantile(food, .90, na.rm = TRUE),1,0),
 
         violent.2017.na = as.numeric(is.na(`Violent Crime Rate`)),
-        violent.2017.ltp90 = ifelse(is.na(`Violent Crime Rate`) == 0 & `Violent Crime Rate` < quantile(`Violent Crime Rate`, .10, na.rm = TRUE),1,0),
+        violent.2017.ltp10 = ifelse(is.na(`Violent Crime Rate`) == 0 & `Violent Crime Rate` < quantile(`Violent Crime Rate`, .10, na.rm = TRUE),1,0),
 
         segregation.2017.na = as.numeric(is.na(segregation_white_nonwhite)),
-        segregation.2017.ltp90 = ifelse(is.na(segregation_white_nonwhite) == 0 & segregation_white_nonwhite < quantile(segregation_white_nonwhite, .10, na.rm = TRUE),1,0),
+        segregation.2017.ltp10 = ifelse(is.na(segregation_white_nonwhite) == 0 & segregation_white_nonwhite < quantile(segregation_white_nonwhite, .10, na.rm = TRUE),1,0),
 
       pcp_2017.gtp90 = `PCP Rate` > quantile(`PCP Rate`, .90, na.rm = TRUE),
 
-      lbw_2017.ltp90 = `% LBW` < quantile(`% LBW`, .10, na.rm = TRUE),
+      lbw_2017.ltp10 = `% LBW` < quantile(`% LBW`, .10, na.rm = TRUE),
 
       
-      income_ratio_2017.ltp90 = `Income Ratio` < quantile(`Income Ratio`, .10, na.rm = TRUE),
+      income_ratio_2017.ltp10 = `Income Ratio` < quantile(`Income Ratio`, .10, na.rm = TRUE),
 
       
-      uninsured_2017.ltp90 = `% Uninsured` < quantile(`% Uninsured`, .10, na.rm = TRUE),
+      uninsured_2017.ltp10 = `% Uninsured` < quantile(`% Uninsured`, .10, na.rm = TRUE),
 
       
       under18_2017.ltp25 = `% < 18` < quantile(`% < 18`, .25, na.rm = TRUE),
@@ -172,12 +172,12 @@ combo.dat7 <- combo.dat6 %>%
       
       prek_2017.gtp90 = prekpct > quantile(prekpct, .90, na.rm = TRUE),
 
-      rentburden_2017.ltp90 = rentburden_pct < quantile(rentburden_pct, .10, na.rm = TRUE),
+      rentburden_2017.ltp10 = rentburden_pct < quantile(rentburden_pct, .10, na.rm = TRUE),
 
      # deaths_2017.lt10 = is.na(deaths_age_adj_rate2017),
       deaths_2017.ltp10 = ifelse(is.na(deaths_age_adj_rate2017)==1 | deaths_age_adj_rate2017 < quantile(deaths_age_adj_rate2017, .10, na.rm = TRUE),1,0),
 
-      incarcerated_2017.ltp90 = incarcerated_rate < quantile(incarcerated_rate, .10, na.rm = TRUE),
+      incarcerated_2017.ltp10 = incarcerated_rate < quantile(incarcerated_rate, .10, na.rm = TRUE),
 
       voting_2017.gtp90 = voting_pct > quantile(voting_pct, .90, na.rm = TRUE),
 
