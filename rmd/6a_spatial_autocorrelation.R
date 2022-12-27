@@ -132,7 +132,7 @@ globalMoran <- moran.test(county3$rate2019, listw, na.action =  na.exclude, zero
 globalMoran
 
 # Creating Table of Local Moran's 
-templmoran <- localmoran(county3$rate2019, listw, p.adjust.method="none", adjust.x=TRUE, zero.policy = TRUE)
+#templmoran <- localmoran(county3$rate2019, listw, p.adjust.method="none", adjust.x=TRUE, zero.policy = TRUE)
 
 
 lmoran<- cbind(county3@data, localmoran(county3$rate2019, listw, p.adjust.method="none", adjust.x=TRUE, zero.policy = TRUE))
@@ -169,7 +169,8 @@ county_new<- merge(county3, lmoran2, by.x="fips_clean", by.y="fips_clean")
 breaks = c(0, 1, 2, 3, 4, 5) 
 LISA1<-tm_shape(filter(county_new, STATEFP.x != "02" & STATEFP.x != "15")) + 
   tm_fill(col = "quadrant", breaks = breaks, 
-          palette=  c("white","red","blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha=0.4)), 
+          #palette=  c("white","red","blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha=0.4)), 
+          palette=  c(rgb(1,1,1,alpha = .3),"red","blue",'purple','green'), 
           labels = c("Not significant", "High-High","Low-Low","Low-High","High-Low"), title="")+
   tm_legend(text.size = 1)  +
   # tm_scale_bar(position = c("LEFT", "BOTTOM"),text.size = 1.0)+
@@ -178,7 +179,26 @@ LISA1<-tm_shape(filter(county_new, STATEFP.x != "02" & STATEFP.x != "15")) +
   tm_layout( frame = FALSE,  
              title = "", 
              legend.position = c("right","bottom"), 
-             legend.text.size = .6)
+             legend.text.size = 1)
 
 LISA1
+tmap_save(filename = "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/rate2019_lisa.png", height=5, width=5)
+
+# Create Scatterplot
+mp <- moran.plot(as.vector(county_new$rate2019), listw)
+               #  labels=as.character(county_new$name), pch=19)
+
+mp
+
+lagdat <- as.data.frame(county_new)
+sizeinfo <- select(filter(ungroup(arrestdat),year==2019),fips_clean,n_all_adults)
+lagdat2 <- merge(lagdat,sizeinfo,by="fips_clean", all.x = TRUE, all.y =FALSE)
+
+ggplot(lagdat2, aes(x=rate2019.y, y=lag.rate2019)) + 
+  geom_point(aes(size=n_all_adults, col=factor(quadrant))) +
+  geom_hline(yintercept = 0, col = "black", lwd = 1.1) +
+  geom_vline(xintercept = 97, col = "black", lwd = 1.1) +
+ # scale_color_manual(values = c('gray','blue', 'green', 'purple','orange','yellow'))
+  scale_color_manual(values = c(rgb(1,1,1,alpha = .3),"red","blue",'purple','green'))
+
 
