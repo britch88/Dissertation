@@ -66,6 +66,7 @@ rate2000t2019 <- merge(rate2000,rate2019, by=c("fips_clean","Name","state"))
 
 # Note shapefiles from 2020 used
 shapefile <- counties()
+state.lines <- states()
 
 ggplot() + geom_sf(data = shapefile, color="black",
                    fill="white", size=0.25)
@@ -106,7 +107,21 @@ dis.sp <- as(shapefile2, "Spatial")
 
 #Merge spatial data set to county data
 countydatv2 <- merge(dis.sp, rate2000t2019, by = "fips_clean", all = TRUE)
-county3 <- filter(countydatv2, is.na(rate2019)==0) ## first removing missing values 
+
+## first removing missing values
+county3 <- filter(countydatv2, is.na(rate2019)==0)  %>% 
+  filter(!fips_clean %in% c("0","00000","01000")) %>%  
+  #filter(str_detect(fips_clean, '721'|'780'|'720'|'600'|'579')  == 0)
+  filter(!grepl('721', fips_clean)) %>% 
+  filter(!grepl('780', fips_clean)) %>% 
+  filter(!grepl('720', fips_clean)) %>% 
+  filter(!grepl('691', fips_clean)) %>% 
+  filter(!grepl('600', fips_clean)) %>% 
+  filter(!grepl('660', fips_clean)) %>% 
+  filter(!grepl('579', fips_clean)) %>% 
+  filter(rate2000 >0) %>% 
+  filter(rate2019 >0) 
+
 
 # Check class of merged data to ensure it is of type spatial
 class(county3)
@@ -115,12 +130,14 @@ class(county3)
 #https://mgimond.github.io/simple_moransI_example/#step_1:_define_neighboring_polygons
 #https://stats.oarc.ucla.edu/r/faq/how-can-i-calculate-morans-i-in-r/
 
-  # graphing data but not including Alaska and Hawaii because makes map to wide
+
+
+# graphing data but not including Alaska and Hawaii because makes map to wide
 tm_shape(filter(county3,STATEFP != "02" & STATEFP != "15" ))+
   tm_fill(col="rate2019",style = "quantile", n=4, palette = "Blues", title = "Young Adult County Arrest Rates in 2019")+
   tm_layout(frame = FALSE,legend.outside = TRUE)+
   tm_borders(lwd=0.01)+
-  tm_shape(county3) +
+  tm_shape(state.lines) +
   tm_borders(lwd=.1)
 
 # Creating spatial weights matrix
@@ -157,17 +174,17 @@ lmoran2 <- lmoran%>%
   mutate(quadrant= ifelse(rate2019s<0 & lag.rate2019 > 0, 3, quadrant)) %>% 
   mutate(quadrant= ifelse(rate2019s>0 & lag.rate2019 < 0, 4, quadrant)) %>%   
   mutate(quadrant= ifelse(lmoran$`Pr(z != E(Ii))` > signif, 0, quadrant)) #%>% 
- # mutate(quadrant2= ifelse(rate2019_st>0 & lagrate2019_st > 0, 1, 0)) %>% 
- # mutate(quadrant2= ifelse(rate2019_st<0 & lagrate2019_st < 0, 2, quadrant2)) %>% 
- # mutate(quadrant2= ifelse(rate2019_st<0 & lagrate2019_st > 0, 3, quadrant2)) %>% 
- # mutate(quadrant2= ifelse(rate2019_st>0 & lagrate2019_st < 0, 4, quadrant2)) %>% 
- # mutate(quadrant2= ifelse(lmoran$LISA_Prate2019 > signif, 0, quadrant2))
+# mutate(quadrant2= ifelse(rate2019_st>0 & lagrate2019_st > 0, 1, 0)) %>% 
+# mutate(quadrant2= ifelse(rate2019_st<0 & lagrate2019_st < 0, 2, quadrant2)) %>% 
+# mutate(quadrant2= ifelse(rate2019_st<0 & lagrate2019_st > 0, 3, quadrant2)) %>% 
+# mutate(quadrant2= ifelse(rate2019_st>0 & lagrate2019_st < 0, 4, quadrant2)) %>% 
+# mutate(quadrant2= ifelse(lmoran$LISA_Prate2019 > signif, 0, quadrant2))
 
 county_new<- merge(county3, lmoran2, by.x="fips_clean", by.y="fips_clean")
 
 #Map of LISA Values
 breaks = c(0, 1, 2, 3, 4, 5) 
-LISA1<-tm_shape(filter(county_new, STATEFP.x != "02" & STATEFP.x != "15")) + 
+LISA1<-tm_shape(filter(county_new, STATEFP.x != "02" & STATEFP.x != "15" & is.na(quadrant)==0)) + 
   tm_fill(col = "quadrant", breaks = breaks, 
           #palette=  c("white","red","blue",rgb(0,0,1,alpha=0.4),rgb(1,0,0,alpha=0.4)), 
           palette=  c(rgb(1,1,1,alpha = .3),"red","blue",'purple','green'), 
@@ -176,29 +193,35 @@ LISA1<-tm_shape(filter(county_new, STATEFP.x != "02" & STATEFP.x != "15")) +
   # tm_scale_bar(position = c("LEFT", "BOTTOM"),text.size = 1.0)+
   # tm_compass(type = "8star",   position = c("RIGHT", "BOTTOM"),      show.labels = 2,   text.size = 0.5)+
   tm_borders(alpha=.5) +
+  tm_shape(state.lines) +
+  tm_borders(lwd=.5) +
   tm_layout( frame = FALSE,  
              title = "", 
-             legend.position = c("right","bottom"), 
-             legend.text.size = 1)
+             legend.position = c("right","bottom"),
+             legend.outside = TRUE,
+             legend.text.size = 1) 
 
 LISA1
 tmap_save(filename = "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/rate2019_lisa.png", height=5, width=5)
 
 # Create Scatterplot
-mp <- moran.plot(as.vector(county_new$rate2019), listw)
-               #  labels=as.character(county_new$name), pch=19)
 
-mp
+
+#mp <- moran.plot(as.vector(county_new$rate2019.x), listw)
+#  labels=as.character(county_new$name), pch=19)
+
+#  labels=as.character(county_new$name), pch=19)
+#mp
 
 lagdat <- as.data.frame(county_new)
 sizeinfo <- select(filter(ungroup(arrestdat),year==2019),fips_clean,n_all_adults)
 lagdat2 <- merge(lagdat,sizeinfo,by="fips_clean", all.x = TRUE, all.y =FALSE)
 
 ggplot(lagdat2, aes(x=rate2019.y, y=lag.rate2019)) + 
-  geom_point(aes(size=n_all_adults, col=factor(quadrant))) +
+  geom_point(aes( col=factor(quadrant))) +
   geom_hline(yintercept = 0, col = "black", lwd = 1.1) +
-  geom_vline(xintercept = 97, col = "black", lwd = 1.1) +
- # scale_color_manual(values = c('gray','blue', 'green', 'purple','orange','yellow'))
+  geom_vline(xintercept = 104.5, col = "black", lwd = 1.1) +
+  # scale_color_manual(values = c('gray','blue', 'green', 'purple','orange','yellow'))
   scale_color_manual(values = c(rgb(1,1,1,alpha = .3),"red","blue",'purple','green'))
 
 
