@@ -4,7 +4,9 @@ dat2000 <- read_excel("raw/Additional Predictors for Decomposition/percent white
 dat2000v2 <- dat2000 %>% 
   mutate(white.pct = (`white male` + `white female`)/ Total * 100,
          corrections.pct = `Correctional institutions`/ Total * 100,
-         fips_clean = substr(`GIS Join Match Code`,3,7))
+         statecode = str_pad(`State Code`,2,pad ="0"),
+         countycode = str_pad(`County Code`,3,pad="0"),
+         fips_clean = paste0(statecode,countycode))
 
 dat2000whitecorrections <- dat2000v2 %>%
   select(fips_clean,white.pct, corrections.pct)
