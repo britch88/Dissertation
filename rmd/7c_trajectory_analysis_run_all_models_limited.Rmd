@@ -1,0 +1,543 @@
+---
+title: "7b Trajectory Analysis with Limited Data"
+author: "Brit Henderson"
+date: "2/18/2022"
+output: html_document
+---
+
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+# packages
+```{r include=FALSE}
+# Loads crimCV into the interpreter
+library(crimCV)
+library(tidyverse)
+library(Hmisc)
+library(GGally)
+library(cowplot)
+
+```
+
+# Source Functions
+```{r}
+knitr::purl("rmd/0a_functions.Rmd")
+source("rmd/0a_functions.R")
+```
+
+
+# load data
+```{r}
+analysis.dat1 <- readRDS(here::here("rda/trajectory_analysis_file_limited.rds"))
+
+
+```
+
+# remove duplicates
+
+```{r}
+analysis.dat2 <- filter(analysis.dat1,fips_clean != "0")
+#duplicated(analysis.dat1[,1:7])
+
+#checkdup <- analysis.dat1[duplicated(analysis.dat1[,1:7])]
+
+#check.dup <- analysis.dat2 %>% 
+ # group_by(year, fips_clean) %>% 
+ # mutate(dupe = n()>1) %>% filter(dupe==TRUE)
+
+
+```
+
+#restructure data to wide format so that each time period is a column, start with just young adult rate of arrest
+```{r}
+analysis.dat3<- analysis.dat2 %>% 
+  pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate, names_prefix = "year") %>% 
+  arrange(fips_clean)  
+
+analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
+
+
+#Turn data into matrix with ID variable omitted
+analysis.mat1 <- as.matrix(analysis.dat4[,2:47]) #turn into matrix
+
+#Replace NA's with negative numbers so code runs; According to CRAN page, negative numbers are treated as missings
+analysis.mat2 <- analysis.mat1
+
+analysis.mat2[is.na(analysis.mat2)]<- -1
+
+summary(analysis.dat4) #check contents
+analysis.mat2[1:10,1:5]
+  
+```
+
+#Use Paul Schneider's loop to determine best fit model based on AIC and BIC. Will check CVE as sensitivity check
+```{r}
+
+# Otherwise select your own data:
+     test.data = analysis.dat4
+    
+  # reducing the size of the demo data set
+    # test.data = test.data[1:100,] # looking at a subset 
+  
+  # Missing values need to be coded as negative values for crimCV
+    test.data[is.na(test.data)] = -0.00001
+  
+  # data frame to matrix
+    df = as.matrix(test.data[,-1])
+    rownames(df) = test.data$fips_clean
+#     df = test.dat2
+  
+  # resulting data set
+    knitr::kable(head(df),format="markdown")
+    
+```    
+    
+#loop for n.cluster = c(1,2,3) and p.poly = c(1,2,3)
+```{r}
+# GBTM CLUSTERING: crimCV
+
+## set the grid of models to evaluate
+  # Set: 
+    n.cluster = c(1,2,3) # 1.which k's to evaluate, 
+    p.poly = c(1,2,3) # 2. which p's to evaluate, 
+    rcv = F # 3. do you want to run cross validation? T/F
+
+## model evaluation
+  
+  # Run all models
+    cv.eval.list = list()
+    index = 0
+    for(k in n.cluster)
+    {
+      sub.index = 0
+      index = index + 1
+          cv.eval.list[[index]] = list()
+          names(cv.eval.list)[k] = paste("Groups",k,sep="_")
+          for(p in p.poly)
+            {
+            print(cat("\n Running models for", n.cluster[k], "Groups, and",p.poly[p],"polynomials..."))
+            cat("\n running k=",k,"poly=",p," \n")
+            sub.index = sub.index + 1
+            temp = crimCV(df,
+                          ng = k,
+                          dpolyp = p,
+                          rcv = rcv,     
+                          model = "ZIP"
+                          )
+        
+            cv.eval.list[[index]][[sub.index]] = temp
+        
+            names(cv.eval.list[[index]])[sub.index] = paste("polynomial",p,sep="_")
+            }
+    }
+    
+## retrieve model evaluation results  
+  
+  # retrieve AIC, BIC and CV error for each of the models
+  points.for.AIC.plot = points.for.BIC.plot = points.for.cv.plot = data.frame(x=NA,value=NA,cluster=NA)
+  for(c in 1:length(cv.eval.list)){
+    for(p in 1:length(cv.eval.list[[c]])){
+      
+  
+      tryCatch({
+          cv = ifelse(!is.null(cv.eval.list[[c]][[p]]$cv),cv.eval.list[[c]][[p]]$cv,NA)
+          points.for.cv.plot = rbind(points.for.cv.plot,
+                                     data.frame(x=p,value=cv ,cluster=c))
+      }, error =function(e){})
+      
+      
+      tryCatch({
+          aic = ifelse(!is.null(cv.eval.list[[c]][[p]]$AIC),cv.eval.list[[c]][[p]]$AIC,NA)
+          points.for.AIC.plot = rbind(points.for.AIC.plot,
+                                      data.frame(x=p,value=aic,cluster=c))
+      }, error =function(e){})
+      
+          tryCatch({
+          bic = ifelse(!is.null(cv.eval.list[[c]][[p]]$BIC),cv.eval.list[[c]][[p]]$BIC,NA)
+          points.for.BIC.plot = rbind(points.for.BIC.plot,
+                                      data.frame(x=p,value=bic,cluster=c))
+          }, error =function(e){})
+      
+    }}
+  
+  points.for.AIC.plot = points.for.AIC.plot[-1,]  
+  points.for.BIC.plot = points.for.BIC.plot[-1,] 
+  points.for.cv.plot = points.for.cv.plot[-1,]
+  
+#Adding code to store values
+aic1 <- points.for.AIC.plot
+bic1 <- points.for.BIC.plot
+cv1 <- points.for.cv.plot
+  
+saveRDS(aic1,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic1lim.rds")
+saveRDS(bic1,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic1lim.rds")
+saveRDS(cv1,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/cv1lim.rds")
+
+```
+  
+#loop for n.cluster = c(1,1,1,4) and p.poly = c(1,2,3)
+```{r}
+# GBTM CLUSTERING: crimCV
+
+## set the grid of models to evaluate
+  # Set: 
+    n.cluster = c(1,1,1,4) # 1.which k's to evaluate, 
+    p.poly = c(1,2,3) # 2. which p's to evaluate, 
+    rcv = F # 3. do you want to run cross validation? T/F
+
+## model evaluation
+  
+  # Run all models
+    cv.eval.list = list()
+    index = 0
+    for(k in n.cluster)
+    {
+      sub.index = 0
+      index = index + 1
+          cv.eval.list[[index]] = list()
+          names(cv.eval.list)[k] = paste("Groups",k,sep="_")
+          for(p in p.poly)
+            {
+            print(cat("\n Running models for", n.cluster[k], "Groups, and",p.poly[p],"polynomials..."))
+            cat("\n running k=",k,"poly=",p," \n")
+            sub.index = sub.index + 1
+            temp = crimCV(df,
+                          ng = k,
+                          dpolyp = p,
+                          rcv = rcv,     
+                          model = "ZIP"
+                          )
+        
+            cv.eval.list[[index]][[sub.index]] = temp
+        
+            names(cv.eval.list[[index]])[sub.index] = paste("polynomial",p,sep="_")
+            }
+    }
+    
+## retrieve model evaluation results  
+  
+  # retrieve AIC, BIC and CV error for each of the models
+  points.for.AIC.plot = points.for.BIC.plot = points.for.cv.plot = data.frame(x=NA,value=NA,cluster=NA)
+  for(c in 1:length(cv.eval.list)){
+    for(p in 1:length(cv.eval.list[[c]])){
+      
+  
+      tryCatch({
+          cv = ifelse(!is.null(cv.eval.list[[c]][[p]]$cv),cv.eval.list[[c]][[p]]$cv,NA)
+          points.for.cv.plot = rbind(points.for.cv.plot,
+                                     data.frame(x=p,value=cv ,cluster=c))
+      }, error =function(e){})
+      
+      
+      tryCatch({
+          aic = ifelse(!is.null(cv.eval.list[[c]][[p]]$AIC),cv.eval.list[[c]][[p]]$AIC,NA)
+          points.for.AIC.plot = rbind(points.for.AIC.plot,
+                                      data.frame(x=p,value=aic,cluster=c))
+      }, error =function(e){})
+      
+          tryCatch({
+          bic = ifelse(!is.null(cv.eval.list[[c]][[p]]$BIC),cv.eval.list[[c]][[p]]$BIC,NA)
+          points.for.BIC.plot = rbind(points.for.BIC.plot,
+                                      data.frame(x=p,value=bic,cluster=c))
+          }, error =function(e){})
+      
+    }}
+  
+  points.for.AIC.plot = points.for.AIC.plot[-1,]  
+  points.for.BIC.plot = points.for.BIC.plot[-1,] 
+  points.for.cv.plot = points.for.cv.plot[-1,]
+  
+#Adding code to store values
+aic2 <- points.for.AIC.plot
+bic2 <- points.for.BIC.plot
+cv2 <- points.for.cv.plot
+  
+saveRDS(aic2,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic2lim.rds")
+saveRDS(bic2,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic2lim.rds")
+saveRDS(cv2,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/cv2lim.rds")
+
+```  
+  
+  
+#loop for n.cluster = c(1,1,1,1,5) and p.poly = c(1,2,3)
+```{r}
+# GBTM CLUSTERING: crimCV
+
+## set the grid of models to evaluate
+  # Set: 
+    n.cluster = c(1,1,1,1,5) # 1.which k's to evaluate, 
+    p.poly = c(1,2,3) # 2. which p's to evaluate, 
+    rcv = F # 3. do you want to run cross validation? T/F
+
+## model evaluation
+  
+  # Run all models
+    cv.eval.list = list()
+    index = 0
+    for(k in n.cluster)
+    {
+      sub.index = 0
+      index = index + 1
+          cv.eval.list[[index]] = list()
+          names(cv.eval.list)[k] = paste("Groups",k,sep="_")
+          for(p in p.poly)
+            {
+            print(cat("\n Running models for", n.cluster[k], "Groups, and",p.poly[p],"polynomials..."))
+            cat("\n running k=",k,"poly=",p," \n")
+            sub.index = sub.index + 1
+            temp = crimCV(df,
+                          ng = k,
+                          dpolyp = p,
+                          rcv = rcv,     
+                          model = "ZIP"
+                          )
+        
+            cv.eval.list[[index]][[sub.index]] = temp
+        
+            names(cv.eval.list[[index]])[sub.index] = paste("polynomial",p,sep="_")
+            }
+    }
+    
+## retrieve model evaluation results  
+  
+  # retrieve AIC, BIC and CV error for each of the models
+  points.for.AIC.plot = points.for.BIC.plot = points.for.cv.plot = data.frame(x=NA,value=NA,cluster=NA)
+  for(c in 1:length(cv.eval.list)){
+    for(p in 1:length(cv.eval.list[[c]])){
+      
+  
+      tryCatch({
+          cv = ifelse(!is.null(cv.eval.list[[c]][[p]]$cv),cv.eval.list[[c]][[p]]$cv,NA)
+          points.for.cv.plot = rbind(points.for.cv.plot,
+                                     data.frame(x=p,value=cv ,cluster=c))
+      }, error =function(e){})
+      
+      
+      tryCatch({
+          aic = ifelse(!is.null(cv.eval.list[[c]][[p]]$AIC),cv.eval.list[[c]][[p]]$AIC,NA)
+          points.for.AIC.plot = rbind(points.for.AIC.plot,
+                                      data.frame(x=p,value=aic,cluster=c))
+      }, error =function(e){})
+      
+          tryCatch({
+          bic = ifelse(!is.null(cv.eval.list[[c]][[p]]$BIC),cv.eval.list[[c]][[p]]$BIC,NA)
+          points.for.BIC.plot = rbind(points.for.BIC.plot,
+                                      data.frame(x=p,value=bic,cluster=c))
+          }, error =function(e){})
+      
+    }}
+  
+  points.for.AIC.plot = points.for.AIC.plot[-1,]  
+  points.for.BIC.plot = points.for.BIC.plot[-1,] 
+  points.for.cv.plot = points.for.cv.plot[-1,]
+  
+#Adding code to store values
+aic3 <- points.for.AIC.plot
+bic3 <- points.for.BIC.plot
+cv3 <- points.for.cv.plot
+  
+saveRDS(aic3,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic3lim.rds")
+saveRDS(bic3,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic3lim.rds")
+saveRDS(cv3,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/cv3lim.rds")
+
+```    
+  
+  
+#loop for n.cluster = c(1,1,1,1,1,6) and p.poly = c(1,2,3)
+```{r}
+# GBTM CLUSTERING: crimCV
+
+## set the grid of models to evaluate
+  # Set: 
+    n.cluster = c(1,1,1,1,1,6) # 1.which k's to evaluate, 
+    p.poly = c(1,2,3) # 2. which p's to evaluate, 
+    rcv = F # 3. do you want to run cross validation? T/F
+
+## model evaluation
+  
+  # Run all models
+    cv.eval.list = list()
+    index = 0
+    for(k in n.cluster)
+    {
+      sub.index = 0
+      index = index + 1
+          cv.eval.list[[index]] = list()
+          names(cv.eval.list)[k] = paste("Groups",k,sep="_")
+          for(p in p.poly)
+            {
+            print(cat("\n Running models for", n.cluster[k], "Groups, and",p.poly[p],"polynomials..."))
+            cat("\n running k=",k,"poly=",p," \n")
+            sub.index = sub.index + 1
+            temp = crimCV(df,
+                          ng = k,
+                          dpolyp = p,
+                          rcv = rcv,     
+                          model = "ZIP"
+                          )
+        
+            cv.eval.list[[index]][[sub.index]] = temp
+        
+            names(cv.eval.list[[index]])[sub.index] = paste("polynomial",p,sep="_")
+            }
+    }
+    
+## retrieve model evaluation results  
+  
+  # retrieve AIC, BIC and CV error for each of the models
+  points.for.AIC.plot = points.for.BIC.plot = points.for.cv.plot = data.frame(x=NA,value=NA,cluster=NA)
+  for(c in 1:length(cv.eval.list)){
+    for(p in 1:length(cv.eval.list[[c]])){
+      
+  
+      tryCatch({
+          cv = ifelse(!is.null(cv.eval.list[[c]][[p]]$cv),cv.eval.list[[c]][[p]]$cv,NA)
+          points.for.cv.plot = rbind(points.for.cv.plot,
+                                     data.frame(x=p,value=cv ,cluster=c))
+      }, error =function(e){})
+      
+      
+      tryCatch({
+          aic = ifelse(!is.null(cv.eval.list[[c]][[p]]$AIC),cv.eval.list[[c]][[p]]$AIC,NA)
+          points.for.AIC.plot = rbind(points.for.AIC.plot,
+                                      data.frame(x=p,value=aic,cluster=c))
+      }, error =function(e){})
+      
+          tryCatch({
+          bic = ifelse(!is.null(cv.eval.list[[c]][[p]]$BIC),cv.eval.list[[c]][[p]]$BIC,NA)
+          points.for.BIC.plot = rbind(points.for.BIC.plot,
+                                      data.frame(x=p,value=bic,cluster=c))
+          }, error =function(e){})
+      
+    }}
+  
+  points.for.AIC.plot = points.for.AIC.plot[-1,]  
+  points.for.BIC.plot = points.for.BIC.plot[-1,] 
+  points.for.cv.plot = points.for.cv.plot[-1,]
+  
+#Adding code to store values
+aic4 <- points.for.AIC.plot
+bic4 <- points.for.BIC.plot
+cv4 <- points.for.cv.plot
+  
+saveRDS(aic4,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic4lim.rds")
+saveRDS(bic4,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic4lim.rds")
+saveRDS(cv4,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/cv4lim.rds")
+
+```    
+
+
+
+
+# Combine AIC results from all loops
+```{r}
+aic1a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic1lim.rds")
+aic2a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic2lim.rds")
+aic3a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic3lim.rds")
+aic4a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic4lim.rds")
+
+
+aic2b <- filter(aic2a, cluster==4)
+aic3b <- filter(aic3a, cluster==5)
+aic4b <- filter(aic4a, cluster==6)
+
+aic.all <- rbind(aic1a,aic2b,aic3b,aic4b)
+
+```
+
+
+# Combine BIC results from all loops
+```{r}
+bic1a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic1lim.rds")
+bic2a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic2lim.rds")
+bic3a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic3lim.rds")
+bic4a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic4lim.rds")
+
+
+bic2b <- filter(bic2a, cluster==4)
+bic3b <- filter(bic3a, cluster==5)
+bic4b <- filter(bic4a, cluster==6)
+
+bic.all <- rbind(bic1a,bic2b,bic3b,bic4b)
+
+```
+
+
+
+```{r}  
+  AIC.gbtm.plot = ggplot(aic.all) + 
+    geom_line(aes(x=x,y=value,col=as.factor(cluster))) +
+    #geom_point(aes(x=x,y=value,col=as.factor(cluster))) +
+    geom_text(aes(x=x,y=value,col=as.factor(cluster),label=cluster),size=5) +
+    xlab("Polynomial") +
+    ylab("AIC")
+  
+  BIC.gbtm.plot = ggplot(bic.all) + 
+    geom_line(aes(x=x,y=value,col=as.factor(cluster))) +
+    # geom_point(aes(x=x,y=value,col=as.factor(cluster))) +
+    geom_text(aes(x=x,y=value,col=as.factor(cluster),label=cluster),size=5) +
+    xlab("Polynomial") +
+    ylab("BIC")
+  
+ # cv.error.gbtm.plot = ggplot(points.for.cv.plot) + 
+ #   geom_line(aes(x=x,y=value,col=as.factor(cluster))) +
+#    geom_text(aes(x=x,y=value,col=as.factor(cluster),label=cluster),size=5) +
+    #geom_point(aes(x=x,y=value,col=as.factor(cluster))) +
+ #   xlab("Polynomial")  +
+#    ylab("LOOCV Absolute error") 
+  
+  plot.legend = get_legend(AIC.gbtm.plot + theme(legend.position = "bottom"))
+  
+  model.eval.plot = 
+    plot_grid(
+      plot_grid(#cv.error.gbtm.plot + theme(legend.position = "none"),
+                              BIC.gbtm.plot + theme(legend.position = "none"),
+                              AIC.gbtm.plot + theme(legend.position = "none"),
+                              ncol=2),
+      plot.legend,nrow = 2,rel_heights = c(10,1))
+  
+  # plot model evaluation
+  model.eval.plot
+  
+```
+
+
+# Plot results from all models
+```{r}  
+  AIC.gbtm.plot = ggplot(points.for.AIC.plot) + 
+    geom_line(aes(x=x,y=value,col=as.factor(cluster))) +
+    #geom_point(aes(x=x,y=value,col=as.factor(cluster))) +
+    geom_text(aes(x=x,y=value,col=as.factor(cluster),label=cluster),size=5) +
+    xlab("Polynomial") +
+    ylab("AIC")
+  
+  BIC.gbtm.plot = ggplot(points.for.BIC.plot) + 
+    geom_line(aes(x=x,y=value,col=as.factor(cluster))) +
+    # geom_point(aes(x=x,y=value,col=as.factor(cluster))) +
+    geom_text(aes(x=x,y=value,col=as.factor(cluster),label=cluster),size=5) +
+    xlab("Polynomial") +
+    ylab("BIC")
+  
+  cv.error.gbtm.plot = ggplot(points.for.cv.plot) + 
+    geom_line(aes(x=x,y=value,col=as.factor(cluster))) +
+    geom_text(aes(x=x,y=value,col=as.factor(cluster),label=cluster),size=5) +
+    #geom_point(aes(x=x,y=value,col=as.factor(cluster))) +
+    xlab("Polynomial")  +
+    ylab("LOOCV Absolute error") 
+  
+  plot.legend = get_legend(AIC.gbtm.plot + theme(legend.position = "bottom"))
+  
+  model.eval.plot = 
+    plot_grid(
+      plot_grid(cv.error.gbtm.plot + theme(legend.position = "none"),
+                              BIC.gbtm.plot + theme(legend.position = "none"),
+                              AIC.gbtm.plot + theme(legend.position = "none"),
+                              ncol=3),
+      plot.legend,nrow = 2,rel_heights = c(10,1))
+  
+  # plot model evaluation
+  model.eval.plot
+```

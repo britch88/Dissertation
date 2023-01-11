@@ -1,0 +1,138 @@
+---
+title: "2a_create_trajectory_analysis_file_limited"
+author: "Brit Henderson"
+date: "Last Updated: `r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+# Objective
+Create an analysis file for use in the trajectory analysis and possibly other analyses
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+```{r functions}
+options(scipen = 100)
+
+```
+
+```{r packages}
+# # Import packages
+library(Hmisc)
+library(tidyverse) # suite of packages in for manipulating/tidying/visualizing, etc. data
+library(lubridate) # manipulating dates
+library(readxl)  # read in excel files
+library(knitr) # for RMD formatting
+library(kableExtra) # to output tables as images
+library(fastDummies) # easy creation of dummy variables 
+
+
+
+```
+
+
+#Load the data sets
+```{r data}
+combo <- readRDS(here::here("rda/combined_populations_arrests.rds")) # 161,448 records
+
+
+```
+
+
+#Create outcome variables and save to analysis file
+```{r}
+traj1 <-   dplyr::mutate(combo, young_adult_rate = c_young_adult_tot/n_young_adults *1000,
+         other_adult_rate = c_other_adult_tot/n_other_adults *1000,
+         all_adult_rate = c_all_adult_tot/n_all_adults *1000,
+         young_to_other_ratio = young_adult_rate/other_adult_rate)
+
+#check new variables
+checkdat3 <- select(traj1, contains("adult"),young_to_other_ratio) %>% head(3) #looks good
+
+#ggplot() +
+
+
+
+```
+
+
+#Examining and top-coding really large rates
+```{r}
+options(scipen = 100)
+describe(traj1$young_adult_rate)
+quantile(traj1$young_adult_rate, c(.95,.96,.97,.975, .98,.99,.995,.9975), na.rm=TRUE)
+
+checkdat <- filter(traj1,young_adult_rate > 597.3538) #%>% summarise(n=n())
+
+traj2 <- traj1
+quantile(traj2$other_adult_rate, c(.95,.96,.97,.975,.98,.99),na.rm=TRUE)
+quantile(traj2$all_adult_rate, c(.95,.96,.97,.975,.98,.99),na.rm=TRUE)
+check_large_rate <- filter(traj1, young_adult_rate > 500) %>% select(young_adult_rate, year, state,fips_clean, n_young_adults, other_adult_rate)
+#184 records have young adult rates well over 1000 per 1000 people. While not impossible, since one person could be arrested several times, it seems unlikely that some of these values are real. I will top code at 99 percentile March 7, 2022
+
+traj2$young_adult_rate[traj2$young_adult_rate > quantile(traj2$young_adult_rate, c(.99),na.rm=TRUE)] <- quantile(traj2$young_adult_rate, c(.99),na.rm=TRUE)
+traj2$other_adult_rate[traj2$other_adult_rate > quantile(traj2$other_adult_rate, c(.99),na.rm=TRUE)] <- quantile(traj2$other_adult_rate, c(.99),na.rm=TRUE)
+traj2$all_adult_rate[traj2$all_adult_rate > quantile(traj2$all_adult_rate, c(.99),na.rm=TRUE)] <- quantile(traj2$all_adult_rate, c(.99),na.rm=TRUE)
+
+#checking the recode
+describe(traj2$young_adult_rate)
+describe(traj2$other_adult_rate)
+describe(traj2$all_adult_rate)
+
+
+
+```
+
+
+#Keep only observations and columns that are needed 
+keeping only county-year-level records that include arrest info, dropping those from years that precede arrest data or that did not
+match to arrest data.
+Dropping the 16,068 records from population data that did not match to arrest data.
+
+```{r}
+
+traj3 <- filter(traj2, inarrest==1) %>% 
+  select(-state,-county.fips,-state.fips, -State) 
+
+describe(traj3)
+
+```
+
+
+#removing rows with low or no arrests and/or young adults
+```{r}
+library(DescTools)
+keepcounties1 <- traj3 %>% 
+  filter(fips_clean !=0) %>%  #144,318
+  filter(n_young_adults > 200) %>%  # 136,628
+  filter(c_young_adult_tot > 1) %>%  #122,822
+  ungroup() %>% 
+  group_by(fips_clean) %>%  
+  summarise(n.years = n())
+
+hist(keepcounties1$n.years, breaks = 47)
+Freq(keepcounties1$n.years, breaks = 45, order = "level")
+
+# limiting to counties with 36 or more years (about 80% of the time period) will include about 80% of the counties. 
+
+keepcounties2 <- keepcounties1 %>% 
+  filter(n.years > 35) %>% 
+  distinct(fips_clean) # 2,435 counties
+
+traj4 <- merge(keepcounties2, traj3, by="fips_clean", all.x = FALSE, all.y = FALSE) %>% 
+  arrange(fips_clean, year)
+
+```
+
+
+
+
+#Save files to type rds
+```{r}
+saveRDS(traj1, file = file.path(rdadir, "trajectory_pre_analysis_file_limited.rds"))
+#saveRDS(traj3, file = file.path(rdadir, "trajectory_analysis_file_limited.rds"))
+saveRDS(traj4, file = file.path(rdadir, "trajectory_analysis_file_limited.rds"))
+```
+
