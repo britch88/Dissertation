@@ -131,7 +131,8 @@ mod_beta9 <- as.data.frame(summary(mod9)$coefficients) %>% mutate(`Pr(>|t|)` = N
                                                                   model = 9)
 
 # stack model results
-all.results1 <- rbind(mod_beta0,mod_beta1,mod_beta2,mod_beta3,mod_beta4,mod_beta5,mod_beta6, mod_beta8,mod_beta9)
+all.results1 <- rbind(mod_beta0,mod_beta1,mod_beta2,mod_beta3,mod_beta4,mod_beta5,mod_beta6, mod_beta8,mod_beta9) %>% 
+  tibble::rownames_to_column("Variable")
 
 
 

@@ -1,0 +1,126 @@
+---
+title: "2c_trajectory_analysis_clean_results"
+author: "Brit Henderson"
+date: "4/3/2022"
+output: html_document
+---
+
+```{r directories}
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+```
+
+# packages
+```{r}
+# Loads crimCV into the interpreter
+library(crimCV)
+library(tidyverse)
+library(Hmisc)
+library(GGally)
+library(cowplot)
+library(reshape2)
+
+```
+
+# Source Functions
+```{r}
+knitr::purl("rmd/0a_functions.Rmd")
+source("rmd/0a_functions.R")
+```
+
+# load data
+```{r}
+analysis.dat1 <- readRDS(here::here("rda/trajectory_analysis_file_limited.rds"))
+
+
+```
+
+# remove duplicates
+
+```{r}
+analysis.dat2 <- filter(analysis.dat1,fips_clean != "0")
+#duplicated(analysis.dat1[,1:7])
+
+#checkdup <- analysis.dat1[duplicated(analysis.dat1[,1:7])]
+
+#check.dup <- analysis.dat2 %>% 
+ # group_by(year, fips_clean) %>% 
+ # mutate(dupe = n()>1) %>% filter(dupe==TRUE)
+
+
+```
+
+#restructure data to wide format so that each time period is a column, start with just young adult rate of arrest
+```{r}
+analysis.dat3<- analysis.dat2 %>% 
+  pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate, names_prefix = "year") %>% 
+  arrange(fips_clean)  
+
+analysis.dat4 <- analysis.dat3 %>% select(sort(names(analysis.dat3)))
+
+```
+
+#Use Paul Schneider's loop to determine best fit model based on AIC and BIC. Will check CVE as sensitivity check
+```{r}
+
+# Otherwise select your own data:
+     test.data = analysis.dat4
+    
+  # reducing the size of the demo data set
+    # test.data = test.data[1:100,] # looking at a subset 
+  
+  # Missing values need to be coded as negative values for crimCV
+    test.data[is.na(test.data)] = -0.00001
+  
+  # data frame to matrix
+    df = as.matrix(test.data[,-1])
+    rownames(df) = test.data$fips_clean
+#     df = test.dat2
+  
+  # resulting data set
+    knitr::kable(head(df),format="markdown")
+    
+```    
+
+#set parameters for model of choice
+```{r} 
+
+options(scipen = 10)
+
+group4_x2 <- crimCV(df,4,rcv=FALSE,dpolyp=2,dpolyl=2)
+
+# Select k and p 
+  k.set = 4
+  p.set = 2
+  
+pdat1<- group4_x2[["gwt"]]  
+
+pdat2 <-data.frame(fips_clean =  rownames(df),
+                                   cluster = apply(pdat1,
+                                                   1,
+                                                   function(x)which(x ==max(x))))
+
+pdat3 <- cbind(pdat1,pdat2) %>%   rownames_to_column("rownum")
+
+
+pdat4 <- as.data.frame(cbind(df,pdat3)) %>% 
+  rename('probG1' = '1',
+         'probG2' = '2',
+         'probG3' = '3',
+         'probG4' = '4') 
+
+
+saveRDS(pdat4,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/gbtm4g2p.rds")
+  
+  # plot details
+  y.axis.label = "Young Adult Arrests per County Year"
+  x.axis.label = "Year"
+  plot.title = "Young Adult Arrest Rate by Year"
+plot(group4_x2)
+
+
+
+    
+```
+

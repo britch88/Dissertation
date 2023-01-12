@@ -115,7 +115,7 @@ bic.all <- rbind(bic1a,bic2b,bic3b,bic4b)
 # GBTM CLUSTERING: crimCV
 ## set the grid of models to evaluate
   # Set: 
-    n.cluster = c(1,1,1,1,1,6) # 1.which k's to evaluate, 
+    n.cluster = c(1,1,1,1,5) # 1.which k's to evaluate, 
     p.poly = c(3) # 2. which p's to evaluate, 
     rcv = F # 3. do you want to run cross validation? T/F
 

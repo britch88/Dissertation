@@ -5,14 +5,14 @@ date: "2/18/2022"
 output: html_document
 ---
 
-```{r directories}
+```{r directories, message=FALSE, warning=FALSE, include=FALSE}
 readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
 
 ```
 
 # packages
-```{r include=FALSE}
+```{r packages, message=FALSE, warning=FALSE, include=FALSE}
 # Loads crimCV into the interpreter
 library(crimCV)
 library(tidyverse)
@@ -52,7 +52,7 @@ analysis.dat2 <- filter(analysis.dat1,fips_clean != "0")
 ```
 
 #restructure data to wide format so that each time period is a column, start with just young adult rate of arrest
-```{r}
+```{r restructure, message=FALSE, warning=FALSE, include=FALSE}
 analysis.dat3<- analysis.dat2 %>% 
   pivot_wider(id_cols =fips_clean ,names_from = year, values_from = young_adult_rate, names_prefix = "year") %>% 
   arrange(fips_clean)  
@@ -74,7 +74,7 @@ analysis.mat2[1:10,1:5]
 ```
 
 #Use Paul Schneider's loop to determine best fit model based on AIC and BIC. Will check CVE as sensitivity check
-```{r}
+```{r select data, message=FALSE, warning=FALSE, include=FALSE}
 
 # Otherwise select your own data:
      test.data = analysis.dat4
@@ -437,14 +437,14 @@ saveRDS(cv4,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/I
 aic1a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic1lim.rds")
 aic2a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic2lim.rds")
 aic3a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic3lim.rds")
-aic4a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic4lim.rds")
+#aic4a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/aic4lim.rds")
 
 
 aic2b <- filter(aic2a, cluster==4)
 aic3b <- filter(aic3a, cluster==5)
-aic4b <- filter(aic4a, cluster==6)
+#aic4b <- filter(aic4a, cluster==6)
 
-aic.all <- rbind(aic1a,aic2b,aic3b,aic4b)
+aic.all <- rbind(aic1a,aic2b,aic3b) #,aic4b)
 
 ```
 
@@ -454,14 +454,14 @@ aic.all <- rbind(aic1a,aic2b,aic3b,aic4b)
 bic1a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic1lim.rds")
 bic2a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic2lim.rds")
 bic3a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic3lim.rds")
-bic4a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic4lim.rds")
+#bic4a <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/Intermediate/bic4lim.rds")
 
 
 bic2b <- filter(bic2a, cluster==4)
 bic3b <- filter(bic3a, cluster==5)
-bic4b <- filter(bic4a, cluster==6)
+#bic4b <- filter(bic4a, cluster==6)
 
-bic.all <- rbind(bic1a,bic2b,bic3b,bic4b)
+bic.all <- rbind(bic1a,bic2b,bic3b)
 
 ```
 
