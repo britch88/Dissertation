@@ -1,3 +1,63 @@
+# title: "Spatial Error Models"
+# author: "Brit Henderson"
+# date: "1/13/2023"
+
+readdatdir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+rdadir <- "/data/share/xproject/Training/Practice/henderson/Dissertation/rda"
+
+
+# packages
+library(tidyverse)
+library(Hmisc)
+library(GGally)
+library(cowplot)
+library(reshape2)
+library(tigris)
+library(spatialreg)
+library(rgdal)
+library(spdplyr)
+library(stringr)
+library(gstat)
+library(sp)
+library(sf)
+library(spdep)
+library(tmap)
+
+# Read in Spatial Analysis file ----
+space1 <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/spatial_analysis_file.rds")
+
+# Read in County shapefiles
+
+# Note shapefiles from 2020 used
+shapefile <- counties()
+state.lines <- states()
+
+ggplot() + geom_sf(data = shapefile, color="black",
+                   fill="white", size=0.25)
+
+# Shapefiles contain territories which will not be included in my analyses so removing
+shapefile2 <- filter(shapefile, STATEFP <= "56")
+
+ggplot() + geom_sf(data = filter(shapefile2, STATEFP != "02" & STATEFP != "15"), color="black",
+                   fill="white", size=0.25)
+
+shapefile2$fips_clean <- shapefile2$GEOID
+
+
+# Merge shapefiles and arrest rates results
+
+space1$in.t <- 1
+shapefile2$in.s <- 1
+countydatv2 <- merge(shapefile2, space1, by = "fips_clean", all.y = TRUE, all.x = FALSE)
+
+table(countydatv2$in.t, countydat$in.s, useNA = "always")
+
+
+
+
+# neighbors ----
+neighb.data <- poly2nb(countydatv2, queen=T)
+cont.neighb <- nb2listw(neighb.data,style="W", zero.policy = TRUE)
 
 ### spatial error model
 
@@ -8,13 +68,16 @@
 #than expected residual values suggest a missing explanatory variable that is spatially correlated. 
 #In this analysis, Lambda is the error multiplier.
 
-sp.err.model <- spatialreg::errorsarlm(rate ~ 1 + Year + metstatcat + income.ratio + pov.rate +
-                                         single.headed + corrections.pct + nonwhite, data=reg.dat2, cont.neighb)
+sp.err.model <- spatialreg::errorsarlm(county.change.x ~ 1 +  rate2000.x + n_young_adults2000.x + proportion.young.adult2000.x + metstatcat.x  + 
+                                         income.ratio2000.x + povrate2000.x  + single.headed2000.x + nonwhite2000.x + corrections.pct2000.x + state.x, 
+                                       data=county_new, 
+                                       cont.neighb,
+                                       zero.policy = TRUE)
 summary(sp.err.model, Nagelkerke = TRUE)
 
 
 # Derive the residuals from the regression. Need to handle those missed values
-seResiduals <- rep(0, length(reg.dat2$rate))
+seResiduals <- rep(0, length(county_new$county.change.x))
 resIndex <- sp.err.model$residuals %>% names() %>% as.integer();
 seResiduals[resIndex] <- sp.err.model$residuals
 
@@ -23,169 +86,35 @@ test1 <-  sp.err.model$residuals %>% names()
 # Test if there is spatial autocorrelation in the regression residuals (errors).
 cont.neighb %>%
   spdep::moran.test(seResiduals, ., zero.policy = TRUE) 
+# Cannot reject the null of no spatial dependence! spatial autocorrelation is gone!
 
 # Add residuals to analysis data set
-reg.dat2$residuals <- sp.err.model$resid 
+#county_new$residuals <- sp.err.model$resid 
 
-## baseline model: year
-model1 <-spatialreg::errorsarlm(rate ~ 1 + Year, data=reg.dat2,cont.neighb) 
-summary(model1, Nagelkerke = TRUE)
+## Saving results  ----
+mod_err <- as.data.frame(summary(test1)$coefficients) %>% mutate(model = "err")
 
+beta <-  as.data.frame(summary(sp.err.model)$coefficients) %>% 
+  rownames_to_column("var") %>% 
+  mutate(var = gsub("/.","",var)) %>% 
+  mutate(var = gsub('[[:punct:] ]+',' ',var)) %>% 
+  mutate(var = gsub("\\s+","",var)) 
+  
+  
 
-## year and met category 
-model2 <-spatialreg::errorsarlm(rate ~ 1 + Year + metstatcat + metstatcat:Year, data=reg.dat2,cont.neighb) 
-summary(model2, Nagelkerke = TRUE)
-
-
-
-## year and state
-model3 <-spatialreg::errorsarlm(rate ~ 1 + Year + state + state:Year, data=reg.dat2,cont.neighb) 
-summary(model3, Nagelkerke = TRUE)
-
-
-
-## Full model
-model4 <-spatialreg::errorsarlm(rate ~ 1 + Year + state +  state:Year + metstatcat + metstatcat:Year + 
-                                  income.ratio + pov.rate + single.headed + corrections.pct + nonwhite, 
-                                data=reg.dat2,
-                                cont.neighb) 
-summary(model4, Nagelkerke = TRUE)
+se <-  as.data.frame(summary(sp.err.model)$rest.se) %>% 
+  rownames_to_column("var") %>% 
+  mutate(var = gsub('[[:punct:] ]+',' ',var)) %>% 
+  mutate(var = gsub("\\s+","",var)) %>% 
+  mutate(var = gsub("IxlambdaWX","",var)) %>% 
+  mutate(var = gsub("/.","",var))
+ 
+mod_err_results <- merge(beta,se,by="var") 
 
 
-################## Saving results the long and painful way
+#### save results ----
+saveRDS(mod_err_results,"/data/share/xproject/Training/Practice/henderson/Dissertation/rda/spatial_error_model_results.rds")
 
-##### model 1
-m1beta <-as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year, data=reg.dat2,cont.neighb))$coefficients)
+writexl::write_xlsx(mod_err_results, "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/spatial_error_model_results.xlsx")
 
-m1se <- as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year, data=reg.dat2,cont.neighb))$rest.se)
-
-m1beta <- rownames_to_column(m1beta, "Outcome")
-m1beta2 <- m1beta %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome)) %>% 
-  mutate(Outcome3 = gsub("\\s+","",Outcome2)) %>% 
-  rename('m1mean' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year, data = reg.dat2, cont.neighb))$coefficients") %>% 
-  select(m1mean, Outcome3) %>% 
-  rename("outcome" = "Outcome3")
-
-m1se <- rownames_to_column(m1se, "Outcome") 
-m1se2 <- m1se %>%  
-  mutate(Outcome0 = gsub("lambda", "", Outcome)) %>% 
-  mutate(Outcome1 = str_replace(Outcome0, "WX", "")) %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome1)) %>%  
-  mutate(Outcome3 = gsub("I ", "", Outcome2)) %>% 
-  mutate(Outcome4 = gsub("\\s+","",Outcome3)) %>% 
-  mutate(Outcome5 = sub(".","",Outcome4)) %>% 
-  rename('m1se' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year, data = reg.dat2, cont.neighb))$rest.se") %>% 
-  select(m1se, Outcome5) %>% 
-  rename("outcome" = "Outcome5")
-
-
-m1res <- merge(m1beta2,m1se2, by="outcome", all = TRUE)
-
-
-
-
-##### model 2
-m2beta <-as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year + metstatcat + metstatcat:Year, data=reg.dat2,cont.neighb))$coefficients)
-
-m2se <- as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year + metstatcat + metstatcat:Year, data=reg.dat2,cont.neighb))$rest.se)
-
-m2beta <- rownames_to_column(m2beta, "Outcome")
-m2beta2 <- m2beta %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome)) %>% 
-  mutate(Outcome3 = gsub("\\s+","",Outcome2)) %>% 
-  rename('m2mean' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year + metstatcat + metstatcat:Year, data = reg.dat2, cont.neighb))$coefficients") %>% 
-  select(m2mean, Outcome3) %>% 
-  rename("outcome" = "Outcome3")
-
-m2se <- rownames_to_column(m2se, "Outcome") 
-m2se2 <- m2se %>%  
-  mutate(Outcome0 = gsub("lambda", "", Outcome)) %>% 
-  mutate(Outcome1 = str_replace(Outcome0, "WX", "")) %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome1)) %>%  
-  mutate(Outcome3 = gsub("I ", "", Outcome2)) %>% 
-  mutate(Outcome4 = gsub("\\s+","",Outcome3)) %>% 
-  mutate(Outcome5 = sub(".","",Outcome4)) %>% 
-  rename('m2se' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year + metstatcat + metstatcat:Year, data = reg.dat2, cont.neighb))$rest.se") %>% 
-  select(m2se, Outcome5) %>% 
-  rename("outcome" = "Outcome5")
-
-
-m2res <- merge(m2beta2,m2se2, by="outcome", all = TRUE)
-
-
-
-
-
-
-### model 3
-m3beta <-as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year + state + state:Year, data=reg.dat2,cont.neighb))$coefficients)
-
-m3se <- as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year + state + state:Year, data=reg.dat2,cont.neighb))$rest.se)
-
-m3beta <- rownames_to_column(m3beta, "Outcome")
-m3beta2 <- m3beta %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome)) %>% 
-  mutate(Outcome3 = gsub("\\s+","",Outcome2)) %>% 
-  rename('m3mean' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year + state + state:Year, data = reg.dat2, cont.neighb))$coefficients") %>% 
-  select(m3mean, Outcome3) %>% 
-  rename("outcome" = "Outcome3")
-
-m3se <- rownames_to_column(m3se, "Outcome") 
-m3se2 <- m3se %>%  
-  mutate(Outcome0 = gsub("lambda", "", Outcome)) %>% 
-  mutate(Outcome1 = str_replace(Outcome0, "WX", "")) %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome1)) %>%  
-  mutate(Outcome3 = gsub("I ", "", Outcome2)) %>% 
-  mutate(Outcome4 = gsub("\\s+","",Outcome3)) %>% 
-  mutate(Outcome5 = sub(".","",Outcome4)) %>% 
-  rename('m3se' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year + state + state:Year, data = reg.dat2, cont.neighb))$rest.se") %>% 
-  select(m3se, Outcome5) %>% 
-  rename("outcome" = "Outcome5")
-
-
-m3res <- merge(m3beta2,m3se2, by="outcome", all = TRUE)
-
-
-
-
-### model 4
-m4beta <-as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year + state +  state:Year + metstatcat + metstatcat:Year + 
-                                                        income.ratio + pov.rate + single.headed + corrections.pct + nonwhite, 
-                                                      data=reg.dat2,
-                                                      cont.neighb))$coefficients)
-
-m4se <- as.data.frame(summary(spatialreg::errorsarlm(rate ~ 1 + Year + state +  state:Year + metstatcat + metstatcat:Year + 
-                                                       income.ratio + pov.rate + single.headed + corrections.pct + nonwhite, 
-                                                     data=reg.dat2,
-                                                     cont.neighb))$rest.se)
-
-m4beta <- rownames_to_column(m4beta, "Outcome")
-m4beta2 <- m4beta %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome)) %>% 
-  mutate(Outcome3 = gsub("\\s+","",Outcome2)) %>% 
-  rename('m4mean' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year + state + state:Year + metstatcat + metstatcat:Year + income.ratio + pov.rate + single.headed + corrections.pct + nonwhite, data = reg.dat2, cont.neighb))$coefficients") %>% 
-  select(m4mean, Outcome3) %>% 
-  rename("outcome" = "Outcome3")
-
-m4se <- rownames_to_column(m4se, "Outcome") 
-m4se2 <- m4se %>%  
-  mutate(Outcome0 = gsub("lambda", "", Outcome)) %>% 
-  mutate(Outcome1 = str_replace(Outcome0, "WX", "")) %>% 
-  mutate(Outcome2 = gsub('[[:punct:] ]+',' ',Outcome1)) %>%  
-  mutate(Outcome3 = gsub("I ", "", Outcome2)) %>% 
-  mutate(Outcome4 = gsub("\\s+","",Outcome3)) %>% 
-  mutate(Outcome5 = sub(".","",Outcome4)) %>% 
-  rename('m4se' = "summary(spatialreg::errorsarlm(rate ~ 1 + Year + state + state:Year + metstatcat + metstatcat:Year + income.ratio + pov.rate + single.headed + corrections.pct + nonwhite, data = reg.dat2, cont.neighb))$rest.se") %>% 
-  select(m4se, Outcome5) %>% 
-  rename("outcome" = "Outcome5")
-
-
-m4res <- merge(m4beta2,m4se2, by="outcome", all = TRUE)
-
-
-
-#### attempt to combine results for all models...
-df_list <- list(m1res, m2res, m3res,m4res)
-all.results <- df_list %>% reduce(full_join, by='outcome')
 

@@ -141,4 +141,10 @@ saveRDS(all.results1,"/data/share/xproject/Training/Practice/henderson/Dissertat
 
 writexl::write_xlsx(all.results1, "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/linear_model_results.xlsx")
 
+# Testing for spatial correlation in OLS model
+
+neighb.data <- poly2nb(reg.dat2, queen=T)
+cont.neighb <- nb2listw(neighb.data,style="W", zero.policy = TRUE)
+
+lm.LMtests(ols, cont.neighb, test="all")
 
