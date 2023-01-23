@@ -191,7 +191,7 @@ results.2000.full <- as.data.frame(summary(reg2000mod.full)$coefficients) %>% mu
 
 # 2010 models ----
 #### just demography 
-reg2010mod.demography  <- lm(rate2010 ~  
+reg2010mod.demography  <- lm(log(rate2010) ~  
                                population_raw_value +
                                percent_below_18_years_of_age_raw_value+
                                percent_65_and_older_raw_value +
@@ -208,7 +208,7 @@ results.2010.demography <- as.data.frame(summary(reg2010mod.demography)$coeffici
 
 
 #### Health outcomes
-reg2010mod.outcomes    <- lm(rate2010 ~  
+reg2010mod.outcomes    <- lm(log(rate2010) ~  
                                low_birthweight_raw_value2010 +
                                premature_death_raw_value2010 +
                                population_raw_value +
@@ -227,7 +227,7 @@ results.2010.outcomes <- as.data.frame(summary(reg2010mod.outcomes)$coefficients
 
 #### Health behaviors
 
-reg2010mod.behaviors <- lm(rate2010 ~ 
+reg2010mod.behaviors <- lm(log(rate2010) ~ 
                              adult_smoking_raw_value2019 + 
                              teen_births_raw_value2010 +
                              teen_births_raw_value2019 +
@@ -250,7 +250,7 @@ results.2010.behaviors <- as.data.frame(summary(reg2010mod.behaviors)$coefficien
 
 
 #### Clinical access
-reg2010mod.access <- lm(rate2010 ~ 
+reg2010mod.access <- lm(log(rate2010) ~ 
                           ratio_of_population_to_primary_care_physicians +
                           ratio_of_population_to_primary_care_physicians +
                           uninsured_adults_raw_value2019 +
@@ -273,7 +273,7 @@ results.2010.access <- as.data.frame(summary(reg2010mod.access)$coefficients) %>
 
 #### SES
 
-reg2010mod.ses <- lm(rate2010 ~ 
+reg2010mod.ses <- lm(log(rate2010) ~ 
                        high_school_graduation_raw_value2010  +
                        high_school_graduation_raw_value2019  +
                        single_parent_households_raw_value +
@@ -296,7 +296,7 @@ results.2010.ses <- as.data.frame(summary(reg2010mod.ses)$coefficients) %>% muta
 
 
 #### Environment
-reg2010mod.environment <- lm(rate2010 ~ 
+reg2010mod.environment <- lm(log(rate2010) ~ 
                                air_pollution_particulate_matter_raw_value +
                                long_commute_driving_alone_raw_value +
                                homeownership_raw_value +
@@ -317,7 +317,7 @@ results.2010.environment <- as.data.frame(summary(reg2010mod.environment)$coeffi
 
 
 #### Full
-reg2010mod.full <- lm(rate2010 ~ 
+reg2010mod.full <- lm(log(rate2010) ~ 
                         air_pollution_particulate_matter_raw_value +
                         high_school_graduation_raw_value2010  +
                         high_school_graduation_raw_value2019  +
@@ -364,7 +364,7 @@ results.2010.full <- as.data.frame(summary(reg2010mod.full)$coefficients) %>% mu
 
 # 2019 models ----                  
 #### just demography 
-reg2019mod.demography  <- lm(rate2019 ~  
+reg2019mod.demography  <- lm(log(rate2019) ~  
                                population_raw_value +
                                percent_below_18_years_of_age_raw_value+
                                percent_65_and_older_raw_value +
@@ -381,7 +381,7 @@ results.2019.demography <- as.data.frame(summary(reg2019mod.demography)$coeffici
 
 
 #### Health outcomes
-reg2019mod.outcomes    <- lm(rate2019 ~  
+reg2019mod.outcomes    <- lm(log(rate2019) ~  
                                low_birthweight_raw_value2010 +
                                premature_death_raw_value2010 +
                                population_raw_value +
@@ -400,7 +400,7 @@ results.2019.outcomes <- as.data.frame(summary(reg2019mod.outcomes)$coefficients
 
 #### Health behaviors
 
-reg2019mod.behaviors <- lm(rate2019 ~ 
+reg2019mod.behaviors <- lm(log(rate2019) ~ 
                              adult_smoking_raw_value2019 + 
                              teen_births_raw_value2010 +
                              teen_births_raw_value2019 +
@@ -423,7 +423,7 @@ results.2019.behaviors <- as.data.frame(summary(reg2019mod.behaviors)$coefficien
 
 
 #### Clinical access
-reg2019mod.access <- lm(rate2019 ~ 
+reg2019mod.access <- lm(log(rate2019) ~ 
                           ratio_of_population_to_primary_care_physicians +
                           ratio_of_population_to_primary_care_physicians +
                           uninsured_adults_raw_value2019 +
@@ -446,7 +446,7 @@ results.2019.access <- as.data.frame(summary(reg2019mod.access)$coefficients) %>
 
 #### SES
 
-reg2019mod.ses <- lm(rate2019 ~ 
+reg2019mod.ses <- lm(log(rate2019) ~ 
                        high_school_graduation_raw_value2010  +
                        high_school_graduation_raw_value2019  +
                        single_parent_households_raw_value +
@@ -468,7 +468,7 @@ results.2019.ses <- as.data.frame(summary(reg2019mod.ses)$coefficients) %>% muta
 
 
 #### Environment
-reg2019mod.environment <- lm(rate2019 ~ 
+reg2019mod.environment <- lm(log(rate2019) ~ 
                                air_pollution_particulate_matter_raw_value +
                                long_commute_driving_alone_raw_value +
                                homeownership_raw_value +
@@ -488,7 +488,7 @@ results.2019.environment <- as.data.frame(summary(reg2019mod.environment)$coeffi
 
 
 #### Full
-reg2019mod.full <- lm(rate2019 ~ 
+reg2019mod.full <- lm(log(rate2019) ~ 
                         air_pollution_particulate_matter_raw_value +
                         high_school_graduation_raw_value2010  +
                         high_school_graduation_raw_value2019  +
@@ -522,7 +522,7 @@ reg2019mod.full <- lm(rate2019 ~
                         percent_females_raw_value +
                         percent_rural_raw_value, 
                       data =health.combo1 )
-results.2019.full.log <- as.data.frame(summary(reg2019mod.full.log)$coefficients) %>% mutate(model = 'full2019') %>% 
+results.2019.full <- as.data.frame(summary(reg2019mod.full)$coefficients) %>% mutate(model = 'full2019') %>% 
   rownames_to_column()
 
 
@@ -555,16 +555,14 @@ all.mods2019 <- df_list2019 %>% reduce(full_join, by='rowname')
 
 
 # Save and export all models ----
-saveRDS(all.mods2000, here::here("rda","health2000results.rds"))
-saveRDS(all.mods2010, here::here("rda","health2010results.rds"))
-saveRDS(all.mods2019, here::here("rda","health2019results.rds"))
+saveRDS(all.mods2000, here::here("rda","health2000resultslog.rds"))
+saveRDS(all.mods2010, here::here("rda","health2010resultslog.rds"))
+saveRDS(all.mods2019, here::here("rda","health2019resultslog.rds"))
 
 
-write.csv(all.mods2000, here::here("Output","health2000results.csv"))
-write.csv(all.mods2010, here::here("Output","health2010results.csv"))
-write.csv(all.mods2019, here::here("Output","health2019results.csv"))
-write.csv(results.2019.full.log, here::here("Output","full2019log.csv"))
+write.csv(all.mods2000, here::here("Output","health2000resultslog.csv"))
+write.csv(all.mods2010, here::here("Output","health2010resultslog.csv"))
+write.csv(all.mods2019, here::here("Output","health2019resultslog.csv"))
 
                   
-hist(log(health.combo1$rate2019), breaks = 100)
-                  
+
