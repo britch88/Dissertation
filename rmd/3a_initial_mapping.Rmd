@@ -33,8 +33,8 @@ library(sp)
 
 # Source Functions
 ```{r}
-knitr::purl("rmd/0a_functions.Rmd")
-source("rmd/0a_functions.R")
+knitr::purl("/data/share/xproject/Training/Practice/henderson/Dissertation/rmd/0a_functions.Rmd")
+source("/data/share/xproject/Training/Practice/henderson/Dissertation/rmd/0a_functions.R")
 ```
 
 # load data
@@ -219,6 +219,7 @@ group.proportions <- as.data.frame(table(countydat$group, useNA="no")) %>%
   mutate(percent = Freq/3141*100)
 
 
+
 ```
 
 #Attempt at Correlograms...
@@ -251,6 +252,15 @@ ggplot(states.df2, aes(variable,state)) +
 
 
 ```
+
+#Attempt at Chisq
+```{r}
+chisq <- chisq.test(analysis.df$region,analysis.df$group, correct = F)
+chisq
+chisq$observed
+```
+
+
 
 #Adding a few maps to zoom in on geographic clustering
 ```{r}
