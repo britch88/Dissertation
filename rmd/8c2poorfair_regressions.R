@@ -5,70 +5,94 @@ options(scipen=100)
 # Load packages ----
 library(skimr)
 library(tidyverse)
-library(ggcorrplot)
+library(car)
+#Anova(lmm)
+library(MASS)
 options(scipen = 100)
 
 
 # read in data ----
 health.dat <- readRDS("/data/share/xproject/Training/Practice/henderson/Dissertation/rda/health_analysis_file2011_2019.rds")
+health.dat2 <- filter(health.dat, is.na(`Poor or fair health raw value`)==0)
+
+# Checking distribution of outcome variable and predictors ----
+hist(health.dat2$`Poor or fair health raw value`, breaks=100)
+qqp(health.dat2$`Poor or fair health raw value`, "norm")
+qqp(health.dat2$`Poor or fair health raw value`, "lnorm")
 
 
-# Outcome 1: Poor Mental Health Days   ----
+# Running Models: Poor or fair Health    ----
 
 #### Base
-mental.base <- lm(`Poor mental health days raw value` ~ as.factor(year) + state,
+poor.fair.base <- lm(`Poor or fair health raw value` ~ as.factor(year) + state,
                     data = health.dat)
 
-results.mental.base <- as.data.frame(summary(mental.base)$coefficients) %>% mutate(model = 'mental.base') %>% 
+results.poor.fair.base <- as.data.frame(summary(poor.fair.base)$coefficients) %>% mutate(model = 'poor.fair.base') %>% 
   rownames_to_column()
 
 
 #### Demographics
-mental.base.demo <- lm(`Poor mental health days raw value` ~ as.factor(year) + state +  
+poor.fair.base.demo <- lm(`Poor or fair health raw value` ~ as.factor(year) + state +  
                     `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
                     `% below 18 years of age raw value` + `% Females raw value` + 
                     `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
                     `% Hispanic raw value` +  `% Asian raw value` + `% not proficient in English raw value`+ `% Rural raw value`,                                  
                   data = health.dat)
 
-results.mental.base.demo <- as.data.frame(summary(mental.base.demo)$coefficients) %>% mutate(model = 'mental.base.demo') %>% 
+results.poor.fair.base.demo <- as.data.frame(summary(poor.fair.base.demo)$coefficients) %>% mutate(model = 'poor.fair.base.demo') %>% 
+  rownames_to_column()
+
+
+
+#### Arrests - unadjusted
+poor.fair.noadjust <- lm(`Poor or fair health raw value` ~  young_adult_rate + lag.ya.rate ,
+                        data = health.dat)
+
+results.noadjust <- as.data.frame(summary(poor.fair.noadjust)$coefficients) %>% mutate(model = 'poor.fair.noadjust') %>% 
+  rownames_to_column()
+
+#### Arrests with state and year FE
+poor.fair.state.year <- lm(`Poor or fair health raw value` ~ young_adult_rate + lag.ya.rate  + as.factor(year) + state ,
+                          data = health.dat)
+
+results.state.year <- as.data.frame(summary(poor.fair.state.year)$coefficients) %>% mutate(model = 'poor.fair.state.year') %>% 
   rownames_to_column()
 
 
 
 #### Arrest current year
-mental.arrest <- lm(`Poor mental health days raw value` ~ as.factor(year) + state + young_adult_rate,
+poor.fair.arrest <- lm(`Poor or fair health raw value` ~ as.factor(year) + state + young_adult_rate,
                     data = health.dat)
 
-results.mental.arrest <- as.data.frame(summary(mental.arrest)$coefficients) %>% mutate(model = 'mental.arrest') %>% 
+results.poor.fair.arrest <- as.data.frame(summary(poor.fair.arrest)$coefficients) %>% mutate(model = 'poor.fair.arrest') %>% 
   rownames_to_column()
 
 
 
 #### Arrests previous year
-mental.arrest.lag <- lm(`Poor mental health days raw value` ~ as.factor(year) + state + young_adult_rate + lag.ya.rate,
+poor.fair.arrest.lag <- lm(`Poor or fair health raw value` ~ as.factor(year) + state + young_adult_rate + lag.ya.rate,
                     data = health.dat)
 
-results.mental.arrest.lag <- as.data.frame(summary(mental.arrest.lag)$coefficients) %>% mutate(model = 'mental.arrest.lag') %>% 
+results.poor.fair.arrest.lag <- as.data.frame(summary(poor.fair.arrest.lag)$coefficients) %>% mutate(model = 'poor.fair.arrest.lag') %>% 
   rownames_to_column()
 
 #### Arrests current and previous plus demographics
 
-mental.arrest.demo <- lm(`Poor mental health days raw value` ~ as.factor(year) + state +  young_adult_rate + lag.ya.rate +
+poor.fair.arrest.demo <- lm(`Poor or fair health raw value` ~ as.factor(year) + state +  young_adult_rate + lag.ya.rate +
                          `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
                          `% below 18 years of age raw value` + `% Females raw value` + 
                          `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
                          `% Hispanic raw value` +  `% Asian raw value` + `% not proficient in English raw value`+ `% Rural raw value`,                                  
                        data = health.dat)
 
-results.mental.arrest.demo <- as.data.frame(summary(mental.arrest.demo)$coefficients) %>% mutate(model = 'mental.arrest.demo') %>% 
+results.poor.fair.arrest.demo <- as.data.frame(summary(poor.fair.arrest.demo)$coefficients) %>% mutate(model = 'poor.fair.arrest.demo') %>% 
   rownames_to_column()
 
 
 
 #### Structural factors
 
-mental.structural <- lm(`Poor mental health days raw value` ~ as.factor(year) + state + 
+poor.fair.structural <- lm(`Poor or fair health raw value` ~ as.factor(year) + state + 
                           `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
                           `% below 18 years of age raw value` + `% Females raw value` + 
                           `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
@@ -78,12 +102,12 @@ mental.structural <- lm(`Poor mental health days raw value` ~ as.factor(year) + 
                           `Children in poverty raw value` + `Children in single-parent households raw value`,
                   data = health.dat)
 
-results.mental.structural <- as.data.frame(summary(mental.structural)$coefficients) %>% mutate(model = 'mental.structural') %>% 
+results.poor.fair.structural <- as.data.frame(summary(poor.fair.structural)$coefficients) %>% mutate(model = 'poor.fair.structural') %>% 
   rownames_to_column()
 
 
 #### Other health factors 
-mental.hfactors <- lm(`Poor mental health days raw value` ~ as.factor(year) + state + 
+poor.fair.hfactors <- lm(`Poor or fair health raw value` ~ as.factor(year) + state + 
                           `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
                           `% below 18 years of age raw value` + `% Females raw value` + 
                           `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
@@ -93,12 +117,12 @@ mental.hfactors <- lm(`Poor mental health days raw value` ~ as.factor(year) + st
                       `Sexually transmitted infections raw value` + `Uninsured adults raw value`,  
                         data = health.dat)
 
-results.mental.hfactors <- as.data.frame(summary(mental.hfactors)$coefficients) %>% mutate(model = 'mental.hfactors') %>% 
+results.poor.fair.hfactors <- as.data.frame(summary(poor.fair.hfactors)$coefficients) %>% mutate(model = 'poor.fair.hfactors') %>% 
   rownames_to_column()
 
 
 #### Structural + Other health factors 
-mental.structural.hfactors <- lm(`Poor mental health days raw value` ~ as.factor(year) + state + 
+poor.fair.structural.hfactors <- lm(`Poor or fair health raw value` ~ as.factor(year) + state + 
                         `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
                         `% below 18 years of age raw value` + `% Females raw value` + 
                         `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
@@ -111,11 +135,11 @@ mental.structural.hfactors <- lm(`Poor mental health days raw value` ~ as.factor
                         `Sexually transmitted infections raw value` + `Uninsured adults raw value`,  
                       data = health.dat)
 
-results.mental.structural.hfactors <- as.data.frame(summary(mental.structural.hfactors)$coefficients) %>% mutate(model = 'mental.structural.hfactors') %>% 
+results.poor.fair.structural.hfactors <- as.data.frame(summary(poor.fair.structural.hfactors)$coefficients) %>% mutate(model = 'poor.fair.structural.hfactors') %>% 
   rownames_to_column()
 
 #### Structural + health access 
-mental.structural.hfactors <- lm(`Poor mental health days raw value` ~ as.factor(year) + state + 
+poor.fair.structural.hfactors <- lm(`Poor or fair health raw value` ~ as.factor(year) + state + 
                                    `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
                                    `% below 18 years of age raw value` + `% Females raw value` + 
                                    `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
@@ -126,23 +150,38 @@ mental.structural.hfactors <- lm(`Poor mental health days raw value` ~ as.factor
                                   `Primary care physicians raw value` +  `Uninsured adults raw value`,  
                                  data = health.dat)
 
-results.mental.structural.hfactors <- as.data.frame(summary(mental.structural.hfactors)$coefficients) %>% mutate(model = 'mental.structural.hfactors') %>% 
+results.poor.fair.structural.hfactors <- as.data.frame(summary(poor.fair.structural.hfactors)$coefficients) %>% mutate(model = 'poor.fair.structural.hfactors') %>% 
   rownames_to_column()
 
                    
-                  
-# combining models ----
-df_list.mental <- list(results.mental.base, results.mental.base.demo, results.mental.arrest, results.mental.arrest.demo, 
-                    results.mental.arrest.lag, results.mental.hfactors, results.mental.structural, results.mental.structural.hfactors)
+# Linear Mixed Model ----
+library(lme4)
+lmm <- lmer(`Poor or fair health raw value` ~ as.factor(year) + 
+              `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
+              `% below 18 years of age raw value` + `% Females raw value` + 
+              `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
+              `% Hispanic raw value` +  `% Asian raw value` + `% not proficient in English raw value`+ `% Rural raw value` + 
+              young_adult_rate + lag.ya.rate + 
+              `Unemployment raw value` + `Some college raw value` + `Median household income raw value` + 
+              `Children in poverty raw value` + `Children in single-parent households raw value` + 
+              (1 | state), 
+            data = health.dat2,
+            REML = FALSE)
+summary(lmm)
 
-all.mods.mental <- df_list.mental %>% reduce(full_join, by='rowname')
+
+# combining models ----
+df_list.poor.fair <- list(results.poor.fair.base, results.poor.fair.base.demo, results.poor.fair.arrest, results.poor.fair.arrest.demo, 
+                    results.poor.fair.arrest.lag, results.poor.fair.hfactors, results.poor.fair.structural, results.poor.fair.structural.hfactors)
+
+all.mods.poor.fair <- df_list.poor.fair %>% reduce(full_join, by='rowname')
 
 
 # Save and export all models ----
-saveRDS(all.mods.mental, here::here("rda",""))
+saveRDS(all.mods.poor.fair, here::here("rda","health_results_poor_fair.rds"))
 
 
-write.csv(all.mods.mental, here::here("Output",""))
+write.csv(all.mods.poor.fair, here::here("Output","health_results_poor_fair.csv"))
 
                   
 

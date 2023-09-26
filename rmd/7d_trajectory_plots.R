@@ -76,6 +76,22 @@ ggplot(sumtraj) +
     theme(legend.title = element_text())
 
 
+# Adding national trend, source 5A, line 335
+ggplot() +
+  geom_smooth(sumtraj,method =loess, se = FALSE, 
+              mapping =aes(x=as.numeric(Year),y=cluster.rate, col=as.factor(cluster), group=as.factor(cluster))) +
+  geom_smooth(nationaldat, method = loess, se = FALSE,mapping =aes(x=year,y=total.rate), col = "black", lty = 2) + 
+ # scale_y_continuous(name=y.axis.label) +
+#  scale_x_continuous(name=x.axis.label) +
+  ggtitle(plot.title) +
+  scale_color_manual(values =group.colors,
+                     name = "Trajectory Group",
+                     breaks = c("1","2","3","4"),
+                     labels = c("Group 1","Group 2","Group 3","Group 4")) +
+  theme_minimal() +
+  theme(legend.title = element_text())
+
+
 ## Plot  trajectories for each county, facetted by trajectory group ----
 y.axis.label = "Young Adult Arrests"
 x.axis.label = "Year"

@@ -61,20 +61,20 @@ table(gdat2$in.t, gdat2$in.s, useNA = "always")
 GWRbandwidth <- gwr.sel(county.change ~ metstatcat + rate2000 + n_young_adults2000 + proportion.young.adult2000 +
                           income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000 , 
                         data=gdat2 , 
-                  coords = cbind(as.numeric(gdat2$INTPTLAT),as.numeric(gdat2$INTPTLON)), 
-                  adapt = TRUE,
-                  show.error.messages= TRUE,
-                  longlat = TRUE)
+                        coords = cbind(as.numeric(gdat2$INTPTLAT),as.numeric(gdat2$INTPTLON)), 
+                        adapt = TRUE,
+                        show.error.messages= TRUE,
+                        longlat = TRUE)
 
 
 
 gwr.model1 <- gwr(county.change ~ metstatcat + rate2000 + n_young_adults2000 + proportion.young.adult2000 +
-                   income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000 , 
-                 data=gdat2 , 
-                 adapt=GWRbandwidth,
-                 coords = cbind(as.numeric(gdat2$INTPTLAT),as.numeric(gdat2$INTPTLON)),
-                 hatmatrix=TRUE,
-                 se.fit=TRUE)
+                    income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000 , 
+                  data=gdat2 , 
+                  adapt=GWRbandwidth,
+                  coords = cbind(as.numeric(gdat2$INTPTLAT),as.numeric(gdat2$INTPTLON)),
+                  hatmatrix=TRUE,
+                  se.fit=TRUE)
 
 gwr.model1
 # 
@@ -85,7 +85,7 @@ gwr.model1
 #                         adaptive = TRUE,
 #                         bw=GWRbandwidth, 
 #                         F123.test = TRUE)
-                       
+
 
 results <-as.data.frame(gwr.model1$SDF)
 names(results)
@@ -119,35 +119,35 @@ is(gdat_spation, "Spatial")
 
 # try other function ----
 gwr.model2 <- gwr.basic(county.change ~ metstatcat + rate2000 + n_young_adults2000 + proportion.young.adult2000 +
-                                                    income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000 ,
-                                                  data=gdat_spation ,
-                                                  kernel = "bisquare",
-                                                  adaptive = TRUE,
-                                                  bw=GWRbandwidth,
-                                                  F123.test = TRUE)
+                          income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000 ,
+                        data=gdat_spation ,
+                        kernel = "bisquare",
+                        adaptive = TRUE,
+                        bw=GWRbandwidth,
+                        F123.test = TRUE)
 
 
 # Monte Carlo test for significance ----
 
 bgwr.mc1000 <- montecarlo.gwr(county.change ~ metstatcat + rate2000 + n_young_adults2000 + proportion.young.adult2000 + 
-                            income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000, 
-                          data=gdat_spation,
-                          bw = 1000, 
-                          nsim = 1000,
-                          kernel = "bisquare", 
-                          adaptive = FALSE)
+                                income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000, 
+                              data=gdat_spation,
+                              bw = 1000, 
+                              nsim = 1000,
+                              kernel = "bisquare", 
+                              adaptive = FALSE)
 
 summary(bgwr.mc1000)
 
 
 
 bgwr.mc1000.v2 <- montecarlo.gwr(county.change ~ metstatcat + rate2000 + n_young_adults2000 + proportion.young.adult2000 + 
-                                income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000, 
-                              data=gdat_spation,
-                              bw = 1000, 
-                              nsim = 1000,
-                              kernel = "gaussian", 
-                              adaptive = TRUE)
+                                   income.ratio2000  + povrate2000  + single.headed2000  + corrections.pct2000  + nonwhite2000, 
+                                 data=gdat_spation,
+                                 bw = 1000, 
+                                 nsim = 1000,
+                                 kernel = "gaussian", 
+                                 adaptive = FALSE)
 
 summary(bgwr.mc1000.v2)
 
@@ -160,7 +160,7 @@ map1 <- tm_shape(gwr.map2) +
   tm_fill("povrate2000.1",
           n = 5,
           style = "quantile",  
-  title = "Poverty rate coefficient") +
+          title = "Poverty rate coefficient") +
   tm_layout(title = "Poverty rate",
             frame = FALSE,
             legend.text.size = .8,
@@ -171,7 +171,7 @@ map1
 map2 <- tm_shape(gwr.map2) +
   tm_fill("income.ratio2000.1",
           n = 5,
-         # palette = "-viridis",
+          # palette = "-viridis",
           #midpoint = -5,
           style = "quantile",
           title = "Income ratio coefficient") +

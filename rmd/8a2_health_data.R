@@ -12,15 +12,15 @@ data2010 = read.csv("raw/RWJ Health Data/analytic_data2010.csv", skip = 3, heade
 colnames(data2010)= headers
 
 
-data2010x2 = data2010[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2010))] %>% 
+data2010x2 = data2010[,!grepl("CI low|CI high|numerator|denominator",names(data2010))] %>% #|AIAN|Black|Hispanic|Asian|White"
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2010)
 
 
-summarydat2010ck <- as.data.frame(skim(data2010x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2010ck <- as.data.frame(skim(data2010x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 # Read in 2011 health data ----
@@ -29,15 +29,15 @@ data2011 = read.csv("raw/RWJ Health Data/analytic_data2011.csv", skip = 3, heade
 colnames(data2011)= headers
 
 
-data2011x2 = data2011[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2011))] %>% 
+data2011x2 = data2011[,!grepl("CI low|CI high|numerator|denominator",names(data2011))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2011)
 
 
-summarydat2011ck <- as.data.frame(skim(data2011x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2011ck <- as.data.frame(skim(data2011x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 
@@ -47,15 +47,15 @@ data2012 = read.csv("raw/RWJ Health Data/analytic_data2012.csv", skip = 3, heade
 colnames(data2012)= headers
 
 
-data2012x2 = data2012[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2012))] %>% 
+data2012x2 = data2012[,!grepl("CI low|CI high|numerator|denominator",names(data2012))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2012)
 
 
-summarydat2012ck <- as.data.frame(skim(data2012x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2012ck <- as.data.frame(skim(data2012x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 
@@ -65,15 +65,15 @@ data2013 = read.csv("raw/RWJ Health Data/analytic_data2013.csv", skip = 3, heade
 colnames(data2013)= headers
 
 
-data2013x2 = data2013[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2013))] %>% 
+data2013x2 = data2013[,!grepl("CI low|CI high|numerator|denominator",names(data2013))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2013)
 
 
-summarydat2013ck <- as.data.frame(skim(data2013x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2013ck <- as.data.frame(skim(data2013x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 
@@ -83,15 +83,15 @@ data2014 = read.csv("raw/RWJ Health Data/analytic_data2014.csv", skip = 3, heade
 colnames(data2014)= headers
 
 
-data2014x2 = data2014[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2014))] %>% 
+data2014x2 = data2014[,!grepl("CI low|CI high|numerator|denominator",names(data2014))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2014)
 
 
-summarydat2014ck <- as.data.frame(skim(data2014x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2014ck <- as.data.frame(skim(data2014x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 # Read in 2015 health data ----
@@ -100,15 +100,15 @@ data2015 = read.csv("raw/RWJ Health Data/analytic_data2015.csv", skip = 3, heade
 colnames(data2015)= headers
 
 
-data2015x2 = data2015[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2015))] %>% 
+data2015x2 = data2015[,!grepl("CI low|CI high|numerator|denominator",names(data2015))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2015)
 
 
-summarydat2015ck <- as.data.frame(skim(data2015x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2015ck <- as.data.frame(skim(data2015x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 
@@ -118,15 +118,15 @@ data2016 = read.csv("raw/RWJ Health Data/analytic_data2016.csv", skip = 3, heade
 colnames(data2016)= headers
 
 
-data2016x2 = data2016[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2016))] %>% 
+data2016x2 = data2016[,!grepl("CI low|CI high|numerator|denominator",names(data2016))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2016)
 
 
-summarydat2016ck <- as.data.frame(skim(data2016x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2016ck <- as.data.frame(skim(data2016x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 
@@ -136,15 +136,15 @@ data2017 = read.csv("raw/RWJ Health Data/analytic_data2017.csv", skip = 3, heade
 colnames(data2017)= headers
 
 
-data2017x2 = data2017[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2017))] %>% 
+data2017x2 = data2017[,!grepl("CI low|CI high|numerator|denominator",names(data2017))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2017)
 
 
-summarydat2017ck <- as.data.frame(skim(data2017x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
+# summarydat2017ck <- as.data.frame(skim(data2017x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
 
 
 
@@ -154,16 +154,16 @@ data2018 = read.csv("raw/RWJ Health Data/analytic_data2018_0.csv", skip = 3, hea
 colnames(data2018)= headers
 
 
-data2018x2 = data2018[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2018))] %>% 
+data2018x2 = data2018[,!grepl("CI low|CI high|numerator|denominator",names(data2018))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2018)
 
 
-summarydat2018ck <- as.data.frame(skim(data2018x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
-
+# summarydat2018ck <- as.data.frame(skim(data2018x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
+# 
 
 
 # Read in 2019 health data ----
@@ -172,56 +172,56 @@ data2019 = read.csv("raw/RWJ Health Data/analytic_data2019.csv", skip = 3, heade
 colnames(data2019)= headers2019
 
 
-data2019x2 = data2019[,!grepl("CI low|CI high|numerator|denominator|AIAN|Black|Hispanic|Asian|White",names(data2019))] %>% 
+data2019x2 = data2019[,!grepl("CI low|CI high|numerator|denominator",names(data2019))] %>% #|AIAN|Black|Hispanic|Asian|White
   mutate(fips_clean = "5-digit FIPS Code",
          year = 2019)
 
 
-summarydat2019ck <- as.data.frame(skim(data2019x2)) %>% 
-  select(-character.max, -character.empty,
-         -character.n_unique, -character.min,
-         -character.whitespace)
-
+# summarydat2019ck <- as.data.frame(skim(data2019x2)) %>% 
+#   select(-character.max, -character.empty,
+#          -character.n_unique, -character.min,
+#          -character.whitespace)
+# 
 
 
 ### check missings for 2010 
-check2010 <- as.data.frame(sapply(data2010x2, function(x) sum(is.na(x))))
+#check2010 <- as.data.frame(sapply(data2010x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2011 
-check2011 <- as.data.frame(sapply(data2011x2, function(x) sum(is.na(x))))
+#check2011 <- as.data.frame(sapply(data2011x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2012 
-check2012 <- as.data.frame(sapply(data2012x2, function(x) sum(is.na(x))))
+#check2012 <- as.data.frame(sapply(data2012x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2013 
-check2013 <- as.data.frame(sapply(data2013x2, function(x) sum(is.na(x))))
+#check2013 <- as.data.frame(sapply(data2013x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2014 
-check2014 <- as.data.frame(sapply(data2014x2, function(x) sum(is.na(x))))
+#check2014 <- as.data.frame(sapply(data2014x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2015 
-check2015 <- as.data.frame(sapply(data2015x2, function(x) sum(is.na(x))))
+#check2015 <- as.data.frame(sapply(data2015x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2016 
-check2016 <- as.data.frame(sapply(data2016x2, function(x) sum(is.na(x))))
+#check2016 <- as.data.frame(sapply(data2016x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2017 
-check2017 <- as.data.frame(sapply(data2017x2, function(x) sum(is.na(x))))
+#check2017 <- as.data.frame(sapply(data2017x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2018 
-check2018 <- as.data.frame(sapply(data2018x2, function(x) sum(is.na(x))))
+#check2018 <- as.data.frame(sapply(data2018x2, function(x) sum(is.na(x))))
 
 
 ### check missings for 2019 
-check2019 <- as.data.frame(sapply(data2019x2, function(x) sum(is.na(x))))
+#check2019 <- as.data.frame(sapply(data2019x2, function(x) sum(is.na(x))))
 
 
 # Prep arrest data for all years ----
@@ -452,6 +452,9 @@ dataprep1.2009_2019 <- filter(arrdat, 2009 <= year & year <= 2019) %>%
                 '% below 18 years of age raw value',
                 '% Females raw value',
                 '% Native Hawaiian/Other Pacific Islander raw value',
+                '% Non-Hispanic African American raw value',
+                '% Hispanic raw value',
+                '% Asian raw value',
                 '% not proficient in English raw value',
                 '% Rural raw value',
                 'year',
@@ -462,9 +465,9 @@ dataprep1.2009_2019 <- filter(arrdat, 2009 <= year & year <= 2019) %>%
                 'Diabetes prevalence raw value',
                 #'Did not get needed health care raw value',
                 #'Excessive drinking raw value',
-                #'High school graduation raw value',
+                'High school graduation raw value',
                 #'HIV prevalence raw value',
-                #'Homicides raw value',
+                'Homicides raw value',
                 'Low birthweight raw value',
                 'Median household income raw value',
                 #'Mental health providers raw value',
@@ -510,17 +513,33 @@ dataprep1.2009_2019 <- filter(arrdat, 2009 <= year & year <= 2019) %>%
 # sapply(health.dat2010, function(x) sum(is.na(x)))
 # sapply(health.dat2019, function(x) sum(is.na(x)))
   
-  health.arrest.2010_2019 <-  merge(dataprep3.2009_2019,health.data.2011_2019, by = c("fips_clean", "year"), all.x = FALSE, all.y = FALSE )
-  # 24,042 records
+  health.arrest.2010_2019 <-  merge(dataprep3.2009_2019,health.data.2011_2019, by = c("fips_clean", "year"), all.x = TRUE, all.y = FALSE )
+  # 29,404 records
  
 glimpse(health.arrest.2010_2019)
 str(health.arrest.2010_2019)
-possible_values <- unique(health.arrest.2010_2019$fips_clean)
-#2,773 unique counties
+possible_values <- unique(health.arrest.2010_2019$fips_clean[health.arrest.2010_2019$year>=2011]) 
+#2,774 unique counties
+
+# create lag variable ----
+health.arrest.2010_2019.lags <- health.arrest.2010_2019 %>% 
+  group_by(fips_clean) %>%
+  arrange(year) %>% 
+  dplyr::mutate(lag.ya.rate = lag(young_adult_rate, n = 1, default = NA),
+                lag.homicides = lag(`Homicides raw value`, n=1, default = NA))
+
+cklag <- filter(health.arrest.2010_2019.lags, fips_clean == "42111") %>% 
+  select(year, young_adult_rate, lag.ya.rate)
+
+# final data set with 2011 through 2019 data ----
+health.arrest.2011.2019.final <- health.arrest.2010_2019.lags %>% 
+  filter(year >= 2011)
+#24,049
+sapply(health.arrest.2011.2019.final, function(x) sum(is.na(x)))
 
 
 # Save data set ----
-  saveRDS(health.arrest.2010_2019, "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/health_analysis_file2010_2019.rds")
+  saveRDS(health.arrest.2011.2019.final, "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/health_analysis_file2011_2019.rds")
 #saveRDS(health.dat2010, "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/health_analysis_file2010.rds")
 #saveRDS(health.dat2019, "/data/share/xproject/Training/Practice/henderson/Dissertation/rda/health_analysis_file2019.rds")
 

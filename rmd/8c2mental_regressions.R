@@ -34,6 +34,19 @@ mental.base.demo <- lm(`Poor mental health days raw value` ~ as.factor(year) + s
 results.mental.base.demo <- as.data.frame(summary(mental.base.demo)$coefficients) %>% mutate(model = 'mental.base.demo') %>% 
   rownames_to_column()
 
+#### Arrests - unadjusted
+mental.noadjust <- lm(`Poor mental health days raw value` ~  young_adult_rate + lag.ya.rate ,
+                    data = health.dat)
+
+results.mental.noadjust <- as.data.frame(summary(mental.noadjust)$coefficients) %>% mutate(model = 'mental.noadjust') %>% 
+  rownames_to_column()
+
+#### Arrests with state and year FE
+mental.state.year <- lm(`Poor mental health days raw value` ~ young_adult_rate + lag.ya.rate  + as.factor(year) + state ,
+                      data = health.dat)
+
+results.state.year <- as.data.frame(summary(mental.state.year)$coefficients) %>% mutate(model = 'mental.state.year') %>% 
+  rownames_to_column()
 
 
 #### Arrest current year
@@ -129,6 +142,21 @@ mental.structural.hfactors <- lm(`Poor mental health days raw value` ~ as.factor
 results.mental.structural.hfactors <- as.data.frame(summary(mental.structural.hfactors)$coefficients) %>% mutate(model = 'mental.structural.hfactors') %>% 
   rownames_to_column()
 
+
+# Linear Mixed Model ----
+library(lme4)
+lmm <- lmer(`Poor mental health days raw value` ~ as.factor(year) + 
+              `% 65 and older raw value` +  `% American Indian and Alaskan Native raw value` +
+              `% below 18 years of age raw value` + `% Females raw value` + 
+              `% Native Hawaiian/Other Pacific Islander raw value` +  `% Non-Hispanic African American raw value` +
+              `% Hispanic raw value` +  `% Asian raw value` + `% not proficient in English raw value`+ `% Rural raw value` + 
+              young_adult_rate + lag.ya.rate + 
+              `Unemployment raw value` + `Some college raw value` + `Median household income raw value` + 
+              `Children in poverty raw value` + `Children in single-parent households raw value` + 
+              (1 | state), 
+            data = health.dat,
+            REML = FALSE)
+summary(lmm)
                    
                   
 # combining models ----
@@ -139,10 +167,10 @@ all.mods.mental <- df_list.mental %>% reduce(full_join, by='rowname')
 
 
 # Save and export all models ----
-saveRDS(all.mods.mental, here::here("rda",""))
+saveRDS(all.mods.mental, here::here("rda","health_results_mental.rds"))
 
 
-write.csv(all.mods.mental, here::here("Output",""))
+write.csv(all.mods.mental, here::here("Output","health_results_mental.csv"))
 
                   
 

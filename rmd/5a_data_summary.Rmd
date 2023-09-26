@@ -361,6 +361,14 @@ ggplot(nationaldat, aes(x=year)) +
 
 
 
+ggplot(nationaldat, aes(x=year)) +
+  geom_smooth(aes(y=total.rate), col = "black", lty=2) + 
+  scale_y_continuous(limits = c(0,200)) +
+  scale_x_continuous(limits = c(1974,2019))  +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
 ```
 
 
